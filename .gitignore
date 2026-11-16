@@ -1,0 +1,41 @@
+# ===== Node =====
+node_modules/
+npm-debug.log*
+
+# ===== SEGREDOS — NUNCA versionar =====
+# variáveis de ambiente (senhas Oracle, credenciais Bradesco)
+.env
+**/.env
+# certificados e chaves do mTLS do Bradesco
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+extrato-bradesco/certs/
+
+# ===== Python (caches / ambientes) =====
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# ===== Dados / saída gerados em runtime =====
+extrato-bradesco/data/
+extrato-bradesco/out/
+extrato-bradesco/logs/
+
+# ===== Dados de negócio (cada máquina tem os seus) =====
+adiantamentos/*.XLSX
+adiantamentos/*.xlsx
+adiantamentos/*.xls
+adiantamentos/*.XLS
+
+# ===== Sistema operacional =====
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bradesco — Extrato</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="side"></div>
+  <div class="main">
+    <div class="topbar">
+      <h1>Bradesco</h1>
+      <div class="sub" id="contaSub">Extrato de conta corrente · saldo e movimentação por período</div>
+    </div>
+    <div class="controls">
+      <label class="dtlbl">De <input id="dtIni" class="sel" type="date" /></label>
+      <label class="dtlbl">Até <input id="dtFim" class="sel" type="date" /></label>
+      <button id="aplicar" class="sel btn-aplicar" type="button">Aplicar</button>
+      <select id="origemSel" class="sel" title="Origem do lançamento">
+        <option value="TODAS">Todas as origens</option>
+        <option value="periodo">Período (D-2 ↩)</option>
+        <option value="ultimos">Últimos (D-1 / D0)</option>
+        <option value="dia">Do dia</option>
+      </select>
+      <input id="busca" class="busca" type="search" placeholder="Buscar descrição, doc…" />
+      <select id="fonteSel" class="sel" title="Origem dos dados">
+        <option value="demo">Demonstração</option>
+        <option value="api">API Bradesco</option>
+      </select>
+      <span class="badge-modo" id="modo"></span>
+    </div>
+    <div class="content">
+      <div class="kpis" id="kpis"></div>
+      <div id="aviso" class="aviso" style="display:none"></div>
+      <div class="panel">
+        <div class="phead">
+          <div class="ttl">Lançamentos <span class="muted" id="cont"></span></div>
+          <div><span class="filtro-ativo" id="filtro"></span><span class="limpar" id="limpar" style="display:none">limpar filtro</span></div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>DATA</th><th>DESCRIÇÃO</th><th>DOC.</th><th>ORIGEM</th>
+            <th class="num">VALOR</th><th class="num">SALDO</th>
+          </tr></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+      <div id="futurosWrap" class="panel" style="display:none">
+        <div class="phead"><div class="ttl">Lançamentos futuros (previstos) <span class="muted" id="contFut"></span></div></div>
+        <table>
+          <thead><tr><th>DATA</th><th>DESCRIÇÃO</th><th>DOC.</th><th class="num">VALOR</th></tr></thead>
+          <tbody id="listaFut"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/bradesco.js"></script>
+</body>
+</html>

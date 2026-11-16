@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visão geral · Contas a Pagar</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="side"></div>
+  <div class="main">
+    <div class="topbar">
+      <h1>Visão geral</h1>
+      <div class="sub">Monitoramento de contas a pagar — AK e JRF</div>
+    </div>
+    <div class="controls">
+      <div id="mp"></div>
+      <span class="badge-modo" id="modo"></span>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="content">
+      <div class="cards" id="cards"><div class="empty">Carregando…</div></div>
+      <div class="panel">
+        <div class="phead"><div class="ttl">Resumo por empresa</div></div>
+        <table>
+          <thead><tr><th>EMPRESA</th><th class="num">TÍTULOS</th><th class="num">ATRASADOS</th><th class="num">VENCEM HOJE</th><th class="num">PRÓXIMOS</th><th class="num">TOTAL</th></tr></thead>
+          <tbody id="resumo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/common.js"></script>
+  <script src="js/overview.js"></script>
+</body>
+</html>

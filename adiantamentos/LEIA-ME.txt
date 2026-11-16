@@ -1,0 +1,23 @@
+PASTA DE ARQUIVOS DE ADIANTAMENTO (NORDESTÃO)
+=============================================
+
+Coloque aqui os arquivos ".XLSX" de "Relatório de antecipação" exportados do
+Nordestão. O painel lê TODOS os arquivos .xlsx desta pasta para saber quais
+títulos já foram adiantados e calcular desconto/valor recebido.
+
+Como o painel usa cada arquivo:
+- Coluna "Referência"      -> casa com CRECEBER.NUMNOTA (identifica o título).
+- Coluna "Montante"        -> valor total do título.
+- Coluna "Taxa"            -> taxa de adiantamento (% ao mês).
+- "Data de Pagamento"      -> data em que o adiantamento foi pago.
+- "Data de Vencimento"     -> vencimento do título.
+- "Dias"                   -> dias entre pagamento e vencimento.
+- "Desconto" / "Valor Liquido" -> números reais do Nordestão (mostrados como referência).
+
+Regras:
+- Um título é considerado ADIANTADO se a NUMNOTA aparece em algum arquivo
+  desta pasta, OU se a NUMNOTA for menor que a MENOR "Referência" encontrada
+  entre todos os arquivos (assume-se que já foi adiantado em período anterior).
+- Pode deixar vários arquivos; em caso de NUMNOTA repetida, vale o arquivo mais recente.
+
+Arquivos temporários do Excel (começando com "~$") são ignorados.

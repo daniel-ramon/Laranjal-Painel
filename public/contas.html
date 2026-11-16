@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contas a pagar</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="side"></div>
+  <div class="main">
+    <div class="topbar">
+      <h1>Contas a pagar</h1>
+      <div class="sub">Títulos por competência (vencimento) — clique num indicador para filtrar</div>
+    </div>
+    <div class="controls">
+      <div id="mp"></div>
+      <select id="empresaSel" class="sel">
+        <option value="TODAS">Todas as empresas</option>
+        <option value="AK">AK Hortifruti</option>
+        <option value="JRF">JRF (Laranjal)</option>
+      </select>
+      <input id="dataVenc" class="sel" type="date" title="Filtrar por data de vencimento" />
+      <input id="busca" class="busca" type="search" placeholder="Buscar fornecedor, nota ou histórico…" />
+      <span class="badge-modo" id="modo"></span>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="content">
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <div class="phead">
+          <div class="ttl">Títulos <span class="muted" id="cont"></span></div>
+          <div><span class="filtro-ativo" id="filtro"></span><span class="limpar" id="limpar" style="display:none">limpar filtro</span></div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>EMPRESA</th><th>VENCIMENTO</th><th>DIAS</th><th>FORNECEDOR</th>
+            <th>HISTÓRICO</th><th>NOTA</th><th>FILIAL</th><th>STATUS</th><th class="num">VALOR</th>
+          </tr></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/common.js"></script>
+  <script src="js/contas.js"></script>
+</body>
+</html>

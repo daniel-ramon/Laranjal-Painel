@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entregas — Painel CP</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="side"></div>
+  <div class="main">
+    <div class="topbar">
+      <h1>Entregas</h1>
+      <div class="sub">Pedidos do dia distribuídos por caminhão (rota) · clique numa loja para ver os itens</div>
+    </div>
+    <div class="controls">
+      <label class="dtlbl">Entrega <input id="dtEntrega" class="sel" type="date" /></label>
+      <select id="dataSel" class="sel" title="Datas com pedidos"></select>
+      <button id="btnImprimir" class="sel btn-print-all" type="button">🖨 Imprimir todos</button>
+      <button id="btnRotas" class="sel btn-aplicar" type="button">＋ Nova rota</button>
+      <span class="badge-modo" id="arq"></span>
+    </div>
+    <div class="content">
+      <div class="cards" id="kpis"></div>
+      <div id="rotas" class="rotas-grid"></div>
+      <div id="extras"></div>
+    </div>
+  </div>
+
+  <!-- Drawer: itens de um pedido / da loja -->
+  <div id="drawer" class="drawer">
+    <div class="drawer-bg" id="drawerBg"></div>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <div>
+          <div class="drawer-ttl" id="dTitulo">Loja</div>
+          <div class="muted" id="dSub"></div>
+        </div>
+        <button class="drawer-x" id="drawerX">✕</button>
+      </div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal: editar/criar rota -->
+  <div id="modal" class="modal">
+    <div class="modal-bg" id="modalBg"></div>
+    <div class="modal-box">
+      <div class="modal-head"><span id="mTitulo">Rota</span><button class="drawer-x" id="modalX">✕</button></div>
+      <div class="modal-body">
+        <label class="fld">Código<input id="mCod" class="sel" type="text" maxlength="4" placeholder="05" /></label>
+        <label class="fld">Motorista / nome<input id="mNome" class="sel" type="text" placeholder="Ex.: Wendell" /></label>
+        <div id="mErro" class="mErro"></div>
+      </div>
+      <div class="modal-foot">
+        <button id="mExcluir" class="sel btn-del" type="button">Excluir rota</button>
+        <span style="flex:1"></span>
+        <button id="mCancelar" class="sel" type="button">Cancelar</button>
+        <button id="mSalvar" class="sel btn-aplicar" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/entregas.js"></script>
+</body>
+</html>
