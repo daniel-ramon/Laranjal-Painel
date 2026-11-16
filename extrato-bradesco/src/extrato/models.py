@@ -31,8 +31,6 @@ GRUPO_SALDO_ANTERIOR = "Saldo Anterior"
 # tipoLancamento em extratoPorPeriodo (01 = saldo anterior C/C, 05 = saldo anterior poupanca)
 TIPOS_SALDO_ANTERIOR = {"01", "05"}
 
-CODIGO_RETORNO_SUCESSO = "00"
-
 
 class Secao(StrEnum):
     """De onde o lancamento veio — preservado para rastreabilidade no relatorio."""
@@ -161,10 +159,15 @@ def _lancamento(item: dict[str, Any], secao: Secao) -> Lancamento:
 
 
 def _checar_bloco(bloco: dict[str, Any], nome: str) -> str:
-    """Devolve a mensagem do bloco; levanta se o codigoRetorno indicar erro."""
+    """Devolve a mensagem do bloco; levanta se o codigoRetorno indicar erro.
+
+    Sucesso = sem codigo ou codigo composto so de zeros. A API devolve o sucesso
+    ora como "0", ora como "00" (e o sandbox usava "00"); so e erro quando sobra
+    algum digito diferente de zero (ex.: "04").
+    """
     codigo = _limpo(bloco.get("codigoRetorno"))
     mensagem = _limpo(bloco.get("mensagem"))
-    if codigo and codigo != CODIGO_RETORNO_SUCESSO:
+    if codigo and codigo.lstrip("0"):
         raise ExtratoAPIError(f"{nome}: codigoRetorno={codigo} - {mensagem}")
     return mensagem
 
