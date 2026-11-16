@@ -172,6 +172,23 @@ def _checar_bloco(bloco: dict[str, Any], nome: str) -> str:
     return mensagem
 
 
+def parse_saldos(payload: dict[str, Any]) -> dict[str, Decimal]:
+    """Mapeia nomeProduto (MAIUSCULO, sem espacos nas pontas) -> valor com sinal,
+    a partir dos blocos da API de Saldo (saldoCC / saldoCP / saldoAplicacaoCC).
+
+    Usado para expor produtos individuais do saldo — por ex. 'LIMITE A UTILIZAR'
+    (cheque especial ainda disponivel). O primeiro bloco a trazer o produto vence.
+    """
+    saldos: dict[str, Decimal] = {}
+    for bloco_nome in ("saldoCC", "saldoCP", "saldoAplicacaoCC"):
+        bloco = payload.get(bloco_nome) or {}
+        for item in bloco.get("lstLancamentosSaldos") or []:
+            nome = _limpo(item.get("nomeProduto")).upper()
+            if nome and nome not in saldos:
+                saldos[nome] = parse_valor(item.get("valorLancamento"), item.get("sinalSaldo"))
+    return saldos
+
+
 def parse_extrato(
     payload: dict[str, Any],
     *,

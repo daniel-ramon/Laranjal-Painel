@@ -79,11 +79,17 @@ function render() {
 
   // ---- KPIs: saldo atual é o destaque ----
   const anteriorSub = d.data_saldo_anterior ? ('em ' + fmtData(d.data_saldo_anterior)) : '';
-  document.getElementById('kpis').innerHTML =
+  let kpisHtml =
     kpiCard('', 'Saldo atual', d.saldo_final, 'blue', `ao fim de ${fmtData(d.periodo.fim)}`, false) +
     kpiCard('', 'Saldo anterior', d.saldo_anterior, 'amber', anteriorSub, false) +
     kpiCard('creditos', 'Créditos', d.creditos, 'green', `${fmtNum(d.lancamentos.filter(l => l.credito).length)} lanç.`, true) +
     kpiCard('debitos', 'Débitos', -Math.abs(d.debitos), 'red', `${fmtNum(d.lancamentos.filter(l => !l.credito).length)} lanç.`, true);
+  // Cheque especial disponível (produto "LIMITE A UTILIZAR" da API de Saldo).
+  // Só vem no modo API; em demonstração é null e o card não aparece.
+  if (d.cheque_especial_disponivel != null) {
+    kpisHtml += kpiCard('', 'Cheque esp. disponível', d.cheque_especial_disponivel, 'violet', 'limite a utilizar', false);
+  }
+  document.getElementById('kpis').innerHTML = kpisHtml;
   document.querySelectorAll('.kpi').forEach((k) => {
     if (!k.dataset.id) { k.style.cursor = 'default'; return; }
     k.onclick = () => { TIPO = (TIPO === k.dataset.id) ? null : k.dataset.id; render(); };

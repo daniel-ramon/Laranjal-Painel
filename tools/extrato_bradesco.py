@@ -60,9 +60,13 @@ def main() -> int:
         return 1
 
     from extrato.config import get_settings
-    from extrato.models import parse_extrato
+    from extrato.models import parse_extrato, parse_saldos
 
     settings = get_settings()
+
+    # Cheque especial disponivel (produto "LIMITE A UTILIZAR" da API de Saldo).
+    # So existe no modo API; no demo (payload do extrato) fica None.
+    cheque_especial_disponivel = None
 
     try:
         if args.payload:
@@ -78,7 +82,15 @@ def main() -> int:
             from extrato.models import ExtratoAPIError
             try:
                 with criar_http_client(settings) as client:
-                    extrato = ClienteBradesco(settings, client).consultar_extrato(inicio, fim)
+                    cli = ClienteBradesco(settings, client)
+                    extrato = cli.consultar_extrato(inicio, fim)
+                    # Saldo e complementar: traz o cheque especial. Reaproveita o
+                    # mesmo token (cache); se falhar, nao derruba o extrato.
+                    try:
+                        saldos = parse_saldos(cli.consultar_saldo())
+                        cheque_especial_disponivel = saldos.get("LIMITE A UTILIZAR")
+                    except Exception:  # noqa: BLE001
+                        cheque_especial_disponivel = None
             except (AuthError, ExtratoHTTPError, ExtratoAPIError) as exc:
                 print(json.dumps({"ok": False, "erro": str(exc)[:400]}))
                 return 1
@@ -103,6 +115,7 @@ def main() -> int:
         "creditos": _f(extrato.creditos),
         "debitos": _f(extrato.debitos),
         "saldo_final": _f(extrato.saldo_final),
+        "cheque_especial_disponivel": _f(cheque_especial_disponivel),
         "lancamentos": [_lanc(l) for l in extrato.lancamentos],
         "futuros": [_lanc(l) for l in extrato.futuros],
         "mensagens": extrato.mensagens,
