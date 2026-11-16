@@ -35,7 +35,11 @@ function consultar(iniISO, fimISO, { demo = false } = {}) {
   });
 
   if (r.error) {
-    return { ok: false, erro: 'falha ao executar Python: ' + r.error.message };
+    const msg = r.error.code === 'ENOENT'
+      ? 'Python não encontrado. Defina PYTHON_BIN no .env com o caminho do python.exe '
+        + '(ex.: C:\\\\Users\\\\<voce>\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe).'
+      : r.error.message;
+    return { ok: false, erro: 'falha ao executar Python: ' + msg };
   }
   const saida = (r.stdout || '').trim();
   if (!saida) {

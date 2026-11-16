@@ -16,6 +16,7 @@ restricoes de seguranca — por isso o TokenProvider cacheia e reusa.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass
@@ -47,22 +48,64 @@ class Token:
 
 
 class TokenProvider:
-    """Obtem e cacheia o access_token. Compartilhe uma instancia por execucao."""
+    """Obtem e cacheia o access_token.
+
+    O cache e em memoria (uma instancia por execucao) E em disco
+    (settings.token_cache_path), porque a ponte do painel abre um processo Python
+    novo a cada consulta — sem o cache em disco, cada abertura da pagina geraria um
+    token, e o manual alerta que gerar tokens em excesso aciona bloqueio.
+    """
 
     def __init__(self, settings: Settings, client: httpx.Client) -> None:
         self._settings = settings
         self._client = client
-        self._token: Token | None = None
+        self._token: Token | None = self._carregar_cache()
 
     def get(self, *, forcar: bool = False) -> str:
         if not forcar and self._token is not None and self._token.valido:
             return self._token.access_token
         self._token = self._solicitar()
+        self._salvar_cache(self._token)
         return self._token.access_token
 
     def invalidar(self) -> None:
-        """Chamado apos um 401, para forcar nova autenticacao na proxima tentativa."""
+        """Chamado apos um 401, para forcar nova autenticacao na proxima tentativa.
+
+        Remove tambem o cache em disco, para a proxima execucao nao reusar um token
+        que o banco ja rejeitou.
+        """
         self._token = None
+        try:
+            self._settings.token_cache_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    # ------------------------------------------------------------- cache em disco
+    def _carregar_cache(self) -> Token | None:
+        caminho = self._settings.token_cache_path
+        try:
+            dados = json.loads(caminho.read_text(encoding="utf-8"))
+            token = Token(
+                access_token=str(dados["access_token"]),
+                expira_em=float(dados["expira_em"]),
+            )
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+        if token.valido:
+            log.info("reaproveitando access_token em cache (restam %.0fs)", token.expira_em - time.time())
+            return token
+        return None
+
+    def _salvar_cache(self, token: Token) -> None:
+        caminho = self._settings.token_cache_path
+        try:
+            caminho.parent.mkdir(parents=True, exist_ok=True)
+            caminho.write_text(
+                json.dumps({"access_token": token.access_token, "expira_em": token.expira_em}),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            log.warning("nao foi possivel gravar o cache de token: %s", exc)
 
     # ------------------------------------------------------------------ interno
     def _solicitar(self) -> Token:

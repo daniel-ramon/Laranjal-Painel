@@ -1,6 +1,54 @@
 'use strict';
 require('dotenv').config();
 const path = require('path');
+const { spawnSync } = require('child_process');
+
+// Resolve o caminho ABSOLUTO do python.exe. Rodando como serviço do Windows, o
+// processo só enxerga o PATH do sistema; o Python instalado "só para o usuário"
+// não aparece e `spawnSync('python')` falha com ENOENT. Então:
+//  - se PYTHON_BIN no .env já é um caminho explícito, confia nele;
+//  - senão, descobre via `py` launcher (fica em C:\Windows, visível a serviços),
+//    depois pelo PATH e por fim em locais comuns de instalação.
+function resolvePythonBin() {
+  const env = (process.env.PYTHON_BIN || '').trim();
+  if (env && (env.includes('\\') || env.includes('/') || /\.exe$/i.test(env))) {
+    return env; // caminho explícito do usuário
+  }
+  const pegaExe = (bin, extra) => {
+    try {
+      const r = spawnSync(bin, (extra || []).concat(['-c', 'import sys;print(sys.executable)']),
+        { encoding: 'utf-8', timeout: 8000, windowsHide: true });
+      const p = (r.stdout || '').trim();
+      if (!r.error && r.status === 0 && p) return p;
+    } catch (_) {}
+    return '';
+  };
+  // 1) py launcher (sempre em C:\Windows → serviços enxergam)
+  let p = pegaExe('py', ['-3']);
+  if (p) return p;
+  // 2) nomes no PATH (resolve para o caminho absoluto, que funciona no serviço)
+  for (const c of ['python', 'python3']) {
+    p = pegaExe(c);
+    if (p) return p;
+  }
+  // 3) locais comuns de instalação no Windows
+  const fs = require('fs');
+  const la = process.env.LOCALAPPDATA || '';
+  const up = process.env.USERPROFILE || '';
+  const candidatos = [
+    la && path.join(la, 'Programs', 'Python', 'Python313', 'python.exe'),
+    la && path.join(la, 'Programs', 'Python', 'Python312', 'python.exe'),
+    up && path.join(up, 'AppData', 'Local', 'Programs', 'Python', 'Python313', 'python.exe'),
+    'C:\\Python313\\python.exe',
+    'C:\\Program Files\\Python313\\python.exe',
+    'C:\\Program Files\\Python312\\python.exe',
+  ].filter(Boolean);
+  for (const c of candidatos) {
+    try { if (fs.existsSync(c)) return c; } catch (_) {}
+  }
+  return env || 'python'; // último recurso (erro claro se não existir)
+}
+const PYTHON_BIN = resolvePythonBin();
 
 // Empresas monitoradas. 'schema' é o owner das tabelas no Oracle.
 const EMPRESAS = [
@@ -114,7 +162,7 @@ const BRADESCO = {
 
 module.exports = {
   PORT: parseInt(process.env.PORT || '3300', 10),
-  PYTHON_BIN: process.env.PYTHON_BIN || 'python',
+  PYTHON_BIN,
   NORDESTAO,
   ENTREGAS,
   BRADESCO,

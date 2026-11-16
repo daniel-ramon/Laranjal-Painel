@@ -122,6 +122,12 @@ class Settings(BaseSettings):
     def db_path(self) -> Path:
         return self.data_dir / "extrato.db"
 
+    @property
+    def token_cache_path(self) -> Path:
+        """Cache do access_token entre execucoes (a ponte abre um processo por
+        consulta; sem isso cada abertura da pagina geraria um token novo)."""
+        return self.data_dir / "token_cache.json"
+
     def ensure_dirs(self) -> None:
         for d in (self.data_dir, self.out_dir, self.logs_dir):
             d.mkdir(parents=True, exist_ok=True)

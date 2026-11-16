@@ -94,6 +94,17 @@ nssm start PainelCP
 Para atualizar o painel depois: `git pull`, `npm install` (se mudou dependência),
 e `nssm restart PainelCP`.
 
+> **Python como serviço (importante):** rodando como serviço, o processo enxerga só
+> o PATH do sistema. Se o Python foi instalado "só para o usuário", o `py`/`python`
+> podem não ser encontrados (erro `spawnSync python ENOENT`). O painel tenta
+> descobrir o `python.exe` sozinho, mas o jeito garantido é **fixar no `.env`** o
+> caminho absoluto do interpretador onde as dependências Python foram instaladas:
+> ```ini
+> PYTHON_BIN=C:\Caminho\para\python.exe
+> ```
+> Descubra o caminho rodando, no mesmo console onde fez o `pip install`:
+> `python -c "import sys;print(sys.executable)"`
+
 > Alternativa sem NSSM: `pm2` + `pm2-windows-startup`. O NSSM é o mais simples para
 > um serviço único.
 
@@ -107,23 +118,86 @@ netsh advfirewall firewall add rule name="Painel CP 3300" dir=in action=allow pr
 
 As máquinas da rede acessam `http://IP-DO-SERVIDOR:3300`.
 
-## 9. Acesso externo e pelo celular
+## 9. Acesso externo e pelo celular (DuckDNS + Caddy com HTTPS)
 
-Duas formas (pode combinar):
+Objetivo: abrir o painel no celular de **qualquer lugar** (4G/outra rede), pelo
+navegador, com cadeado (HTTPS) e sem instalar app. Como **não há login no painel**,
+colocamos uma **senha no próprio Caddy** (`basic_auth`) para não deixar aberto.
 
-- **VPN (recomendado).** Quem estiver na VPN acessa `http://IP-DO-SERVIDOR-NA-VPN:3300`,
-  inclusive no celular. É o jeito mais seguro, porque o painel **não fica exposto na
-  internet pública** — importante, já que não há login.
-- **Proxy reverso com HTTPS (Caddy).** Coloque o Caddy na frente para ter um endereço
-  bonito e **cadeado (HTTPS)** em vez de `http://ip:porta`. O Caddy cuida do certificado
-  sozinho. Exemplo de `Caddyfile`:
-  ```
-  painel.sualoja.com.br {
-      reverse_proxy localhost:3300
-  }
-  ```
-  O celular abre `https://painel.sualoja.com.br`. (Precisa de um nome/DNS apontando
-  para o servidor.)
+> Alternativa sem expor na internet: **VPN** (Radmin para PCs, ou Tailscale para PC +
+> celular). Mais seguro, mas o celular precisa do app da VPN. O caminho abaixo é o de
+> acesso público pelo navegador.
+
+### 9.1. Registrar o endereço no DuckDNS (grátis)
+
+1. Acesse `https://www.duckdns.org` e entre com Google/GitHub.
+2. Crie um subdomínio, ex.: `painelloja` → vira `painelloja.duckdns.org`.
+3. Anote o **token** que aparece no topo da página.
+
+Mantenha o endereço apontando para o IP da loja (que pode mudar) com uma Tarefa
+Agendada no servidor, rodando a cada 5 min:
+
+```powershell
+# troque SUBDOMINIO e TOKEN
+Invoke-RestMethod "https://www.duckdns.org/update?domains=SUBDOMINIO&token=TOKEN&ip="
+```
+
+(O `ip=` vazio faz o DuckDNS usar o IP público de onde a chamada saiu — o da loja.)
+
+### 9.2. Roteador: redirecionar portas (precisa de acesso ao roteador)
+
+No roteador da loja, crie **port forwarding**:
+
+| Porta externa | Protocolo | Destino | Porta interna |
+|---|---|---|---|
+| 80 | TCP | 192.168.30.61 | 80 |
+| 443 | TCP | 192.168.30.61 | 443 |
+
+A porta 80 é só para o Caddy emitir o certificado; o acesso é pela 443.
+Sem esse redirecionamento, o endereço **não abre de fora**.
+
+### 9.3. Firewall do servidor: liberar 80 e 443
+
+```bash
+netsh advfirewall firewall add rule name="Caddy HTTP 80" dir=in action=allow protocol=TCP localport=80
+netsh advfirewall firewall add rule name="Caddy HTTPS 443" dir=in action=allow protocol=TCP localport=443
+```
+
+### 9.4. Instalar o Caddy e configurar
+
+Instale o Caddy (ex.: `winget install CaddyServer.Caddy`, ou baixe o `.exe` em
+`https://caddyserver.com/download`). Gere o hash da senha de acesso:
+
+```bash
+caddy hash-password --plaintext "SUA_SENHA"
+```
+
+Crie o `Caddyfile` (ex.: `C:\caddy\Caddyfile`) com o subdomínio, a senha e o proxy
+para o painel:
+
+```
+painelloja.duckdns.org {
+    basic_auth {
+        laranjal <HASH_GERADO_ACIMA>
+    }
+    reverse_proxy localhost:3300
+}
+```
+
+> Se não quiser senha, remova o bloco `basic_auth` — mas aí o painel fica aberto
+> para quem tiver o endereço.
+
+### 9.5. Rodar o Caddy como serviço (NSSM) e testar
+
+```bash
+nssm install Caddy "C:\caddy\caddy.exe" "run --config C:\caddy\Caddyfile"
+nssm set Caddy AppDirectory "C:\caddy"
+nssm set Caddy Start SERVICE_AUTO_START
+nssm start Caddy
+```
+
+No celular, **fora do Wi-Fi da loja** (ex.: 4G), abra `https://painelloja.duckdns.org`.
+Deve pedir a senha e abrir o painel com cadeado.
 
 A interface **já é responsiva** — no celular a barra lateral vira menu (botão ☰),
 os cards empilham e as tabelas rolam na horizontal.
