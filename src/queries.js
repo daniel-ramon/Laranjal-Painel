@@ -71,24 +71,40 @@ function isoDate(d) {
     + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-// Busca os títulos das duas empresas para o mês informado.
-async function buscarTitulos(mes) {
-  if (USE_MOCK) return mock.gerar(mes);
+// 'YYYY-MM-DD' + 1 dia (para transformar um fim INCLUSIVO em limite exclusivo no SQL).
+function diaSeguinteISO(iso) {
+  const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+  return isoDate(new Date(y, m - 1, d + 1));
+}
 
-  const { ini, fim } = monthRange(mes);
-  const iniS = isoDate(ini), fimS = isoDate(fim);
+// Núcleo: busca os títulos das duas empresas cujo vencimento esteja no range
+// [iniS, fimExclusivoS). Os parâmetros já são 'YYYY-MM-DD'.
+async function buscarPorRange(iniS, fimExclusivoS) {
   const todas = [];
   for (const emp of EMPRESAS) {
     const sql = montarSQL(emp);
     let rows;
     if (DRIVER === 'jdbc') {
-      rows = await require('./db-jdbc').query(emp.id, sql, iniS, fimS);
+      rows = await require('./db-jdbc').query(emp.id, sql, iniS, fimExclusivoS);
     } else {
-      rows = await require('./db').query(emp.id, sql, { ini: iniS, fim: fimS });
+      rows = await require('./db').query(emp.id, sql, { ini: iniS, fim: fimExclusivoS });
     }
     rows.forEach((r) => todas.push(normalizar(emp.id, r)));
   }
   return todas;
 }
 
-module.exports = { buscarTitulos, montarSQL };
+// Busca os títulos das duas empresas para o mês informado (usado pelo overview).
+async function buscarTitulos(mes) {
+  if (USE_MOCK) return mock.gerar(mes);
+  const { ini, fim } = monthRange(mes);
+  return buscarPorRange(isoDate(ini), isoDate(fim));
+}
+
+// Busca por período de vencimento [ini, fim], com AMBAS as datas INCLUSIVAS.
+async function buscarTitulosPorPeriodo(iniS, fimS) {
+  if (USE_MOCK) return mock.gerarPeriodo(iniS, fimS);
+  return buscarPorRange(iniS, diaSeguinteISO(fimS));
+}
+
+module.exports = { buscarTitulos, buscarTitulosPorPeriodo, montarSQL };

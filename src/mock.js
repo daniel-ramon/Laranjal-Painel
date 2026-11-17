@@ -66,4 +66,12 @@ function gerar(mes /* 'YYYY-MM' */) {
   return linhas;
 }
 
-module.exports = { gerar };
+// Gera o plano ao redor de HOJE e filtra pelos vencimentos no período [ini, fim]
+// (ambos inclusivos). Serve ao filtro por data de vencimento da página de contas.
+function gerarPeriodo(iniS, fimS) {
+  const hoje = new Date();
+  const mesHoje = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+  return gerar(mesHoje).filter((t) => t.dtvenc >= iniS && t.dtvenc <= fimS);
+}
+
+module.exports = { gerar, gerarPeriodo };

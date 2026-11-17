@@ -1,11 +1,15 @@
 document.getElementById('side').innerHTML = sidebar('contas');
 
-let MES = getMes();
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoHoje() { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function isoPrimeiroDia() { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-01'; }
+
+let INI = isoPrimeiroDia();  // data de vencimento inicial (padrão: 1º dia do mês)
+let FIM = isoHoje();         // data de vencimento final (padrão: hoje)
 let DADOS = null;
 let FILTRO = null;      // 'vencidos' | 'hoje' | 'semana' | 'pagos' | null
 let EMPRESA = 'TODAS';  // 'TODAS' | 'AK' | 'JRF'
 let BUSCA = '';         // texto de busca
-let DATA_VENC = '';     // 'YYYY-MM-DD' | '' (filtro por data de vencimento)
 
 const LABEL = { vencidos: 'Vencidos', hoje: 'Vencem hoje', semana: 'Vencem esta semana', pagos: 'Pagos' };
 const PILL = { vencido: 'Vencido', vence_hoje: 'Vence hoje', vence_semana: 'Esta semana', proximo: 'Próximo', pago: 'Pago' };
@@ -41,9 +45,6 @@ function passaBusca(t) {
     || String(t.numnota || '').toLowerCase().includes(q)
     || (t.historico || '').toLowerCase().includes(q);
 }
-function passaData(t) {
-  return !DATA_VENC || t.dtvenc === DATA_VENC;
-}
 
 function passaFiltro(t) {
   if (!FILTRO) return true;
@@ -66,7 +67,7 @@ function render() {
   });
 
   // ordena do vencimento mais próximo (menor dias) para o mais distante
-  let linhas = d.titulos.filter((t) => passaFiltro(t) && passaEmpresa(t) && passaBusca(t) && passaData(t)).slice()
+  let linhas = d.titulos.filter((t) => passaFiltro(t) && passaEmpresa(t) && passaBusca(t)).slice()
     .sort((a, b) => {
       if (a.isPago !== b.isPago) return a.isPago ? 1 : -1; // pagos por último
       return a.diasParaVenc - b.diasParaVenc || (a.dtvenc < b.dtvenc ? -1 : 1);
@@ -101,16 +102,23 @@ function render() {
 }
 
 async function carregar() {
-  document.getElementById('mp').replaceChildren(monthPicker(MES, (m) => {
-    MES = m; setMes(m);
-    DATA_VENC = ''; document.getElementById('dataVenc').value = ''; // limpa filtro de data ao trocar mês
-    carregar();
-  }));
-  DADOS = await api('/api/contas?mes=' + MES);
+  DADOS = await api(`/api/contas?ini=${INI}&fim=${FIM}`);
   document.getElementById('modo').textContent = DADOS.modo === 'exemplo' ? '● dados de exemplo' : '● Oracle';
   document.getElementById('legend').innerHTML = legendaEmpresas(DADOS.empresas);
   render();
 }
+
+// ---- Controles ----
+const dtIni = document.getElementById('dtIni');
+const dtFim = document.getElementById('dtFim');
+dtIni.value = INI; dtFim.value = FIM;
+
+document.getElementById('aplicar').addEventListener('click', () => {
+  INI = dtIni.value || INI;
+  FIM = dtFim.value || FIM;
+  if (INI > FIM) { const t = INI; INI = FIM; FIM = t; dtIni.value = INI; dtFim.value = FIM; } // normaliza se invertido
+  carregar().catch((e) => { document.getElementById('lista').innerHTML = `<tr><td colspan="9" class="empty">Falha: ${e.message}</td></tr>`; });
+});
 
 // filtros que agem sobre os dados já carregados (sem ir ao servidor)
 document.getElementById('empresaSel').addEventListener('change', (e) => {
@@ -120,16 +128,6 @@ document.getElementById('empresaSel').addEventListener('change', (e) => {
 document.getElementById('busca').addEventListener('input', (e) => {
   BUSCA = e.target.value.trim();
   if (DADOS) render();
-});
-document.getElementById('dataVenc').addEventListener('change', (e) => {
-  DATA_VENC = e.target.value; // 'YYYY-MM-DD' ou ''
-  if (DATA_VENC && DATA_VENC.slice(0, 7) !== MES) {
-    MES = DATA_VENC.slice(0, 7); // troca de mês automaticamente
-    setMes(MES);
-    carregar();                  // recarrega e chama render (mantém o filtro de data)
-  } else if (DADOS) {
-    render();
-  }
 });
 
 carregar().catch((e) => { document.getElementById('lista').innerHTML = `<tr><td colspan="9" class="empty">Falha: ${e.message}</td></tr>`; });

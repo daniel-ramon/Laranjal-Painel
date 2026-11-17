@@ -11,16 +11,17 @@
   <div class="main">
     <div class="topbar">
       <h1>Contas a pagar</h1>
-      <div class="sub">Títulos por competência (vencimento) — clique num indicador para filtrar</div>
+      <div class="sub">Títulos por data de vencimento — clique num indicador para filtrar</div>
     </div>
     <div class="controls">
-      <div id="mp"></div>
+      <label class="dtlbl">De <input id="dtIni" class="sel" type="date" title="Vencimento a partir de" /></label>
+      <label class="dtlbl">Até <input id="dtFim" class="sel" type="date" title="Vencimento até" /></label>
+      <button id="aplicar" class="sel btn-aplicar" type="button">Aplicar</button>
       <select id="empresaSel" class="sel">
         <option value="TODAS">Todas as empresas</option>
         <option value="AK">AK Hortifruti</option>
         <option value="JRF">JRF (Laranjal)</option>
       </select>
-      <input id="dataVenc" class="sel" type="date" title="Filtrar por data de vencimento" />
       <input id="busca" class="busca" type="search" placeholder="Buscar fornecedor, nota ou histórico…" />
       <span class="badge-modo" id="modo"></span>
       <div class="legend" id="legend"></div>

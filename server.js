@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { PORT, USE_MOCK, EMPRESAS } = require('./src/config');
-const { buscarTitulos } = require('./src/queries');
+const { buscarTitulos, buscarTitulosPorPeriodo } = require('./src/queries');
 const { agregar, monthRange } = require('./src/status');
 const nordestao = require('./src/nordestao');
 const entregas = require('./src/entregas');
@@ -55,11 +55,14 @@ app.get('/api/overview', async (req, res) => {
 
 app.get('/api/contas', async (req, res) => {
   try {
-    const mes = validarMes(req.query.mes);
-    const titulos = await buscarTitulos(mes);
+    // Filtro por data de vencimento: [ini, fim] inclusivo.
+    // Padrão: 1º dia do mês corrente até hoje.
+    const ini = validarData(req.query.ini, primeiroDiaMes());
+    const fim = validarData(req.query.fim, hojeISO());
+    const titulos = await buscarTitulosPorPeriodo(ini, fim);
     const ag = agregar(titulos);
     res.json({
-      mes, modo: USE_MOCK ? 'exemplo' : 'oracle',
+      ini, fim, modo: USE_MOCK ? 'exemplo' : 'oracle',
       kpis: ag.kpis,
       totalGeral: ag.totalGeral,
       titulos: ag.linhas,
