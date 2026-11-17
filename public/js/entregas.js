@@ -25,21 +25,24 @@ function diaSemana(iso) {
   return nomes[new Date(y, m - 1, d).getDay()];
 }
 
-// ---------------- KPIs ----------------
+// ---------------- Métricas (strip compacto) ----------------
 function renderKpis() {
   const t = DADOS.totais;
   const rotasAtivas = DADOS.rotas.filter((r) => r.qtPedidos > 0).length;
-  const card = (ico, titulo, valor, qtd, cls) => `
-    <div class="card ${cls || ''}">
-      <div class="head"><span>${titulo}</span><span class="ico-box">${ico}</span></div>
-      <div class="valor">${valor}</div>
-      <div class="qtd">${qtd}</div>
+  const stat = (ico, label, valor, sub, cls) => `
+    <div class="stat ${cls || ''}">
+      <div class="ic">${ico}</div>
+      <div class="bd">
+        <div class="lb">${label}</div>
+        <div class="vl">${valor}</div>
+        <div class="sub">${sub}</div>
+      </div>
     </div>`;
   document.getElementById('kpis').innerHTML =
-    card('▦', 'Pedidos do dia', fmtNum(t.qtPedidos), `${rotasAtivas} de ${DADOS.rotas.length} rota(s) com entrega`, 'accent-blue') +
-    card('📦', 'Peso total', fmtNum(t.peso) + ' kg', 'carga do dia · todas as rotas', '') +
-    card('≣', 'Itens', fmtNum(t.qtItens), 'linhas de produto somadas', '') +
-    card('$', 'Valor total', fmtBRL(t.valor), 'soma dos pedidos do dia', 'accent-amber');
+    stat('▦', 'Pedidos do dia', fmtNum(t.qtPedidos), `${rotasAtivas}/${DADOS.rotas.length} rota(s) com entrega`, 'ac-blue') +
+    stat('📦', 'Peso total', fmtNum(t.peso) + ' kg', 'carga · todas as rotas', 'ac-teal') +
+    stat('≣', 'Itens', fmtNum(t.qtItens), 'linhas de produto', '') +
+    stat('$', 'Valor total', fmtBRL(t.valor), 'soma dos pedidos', 'ac-amber');
 }
 
 // ---------------- Opções de rota (para mover loja) ----------------
@@ -51,19 +54,26 @@ function opcoesRota(sel) {
 }
 
 // ---------------- Card de uma loja dentro da rota ----------------
-function lojaLinha(l) {
+// comMover = true mostra o seletor de rota (visão por rota); na visão geral some.
+function lojaLinha(l, comMover) {
   const tem = l.qtPedidos > 0;
   const alertas = l.alertas || [];
-  const selo = tem
-    ? `<span class="pill pago">${l.qtPedidos} pedido(s)</span>`
+  const alerta = alertas.length
+    ? `<span class="loja-alert" title="${alertas.join(' · ').replace(/"/g, '&quot;')}">!</span>` : '';
+  const clickable = tem || alertas.length;
+  const meta = tem
+    ? `<span class="pill pago">${fmtNum(l.qtPedidos)} ped.</span>`
+      + `<span class="mi">${fmtNum(l.peso)} kg</span>`
+      + `<span class="mi">${fmtNum(l.qtItens)} itens</span>`
     : `<span class="pill proximo">sem pedido</span>`;
-  const alerta = alertas.length ? `<span class="pill vence_hoje" title="${alertas.join(' · ').replace(/"/g, '&quot;')}">!</span>` : '';
-  return `<div class="loja-row ${tem || alertas.length ? 'click' : 'vazia'}" data-cnpj="${l.cnpj}">
-      <div class="loja-info">
-        <div class="loja-nome">${l.titulo} ${alerta}</div>
-        <div class="loja-meta">${selo} ${tem ? `<span class="num">${fmtNum(l.peso)} kg</span> · <span class="num">${fmtBRL(l.valor)}</span> · ${fmtNum(l.qtItens)} itens` : ''}</div>
-      </div>
-      <select class="sel rota-mov" data-cnpj="${l.cnpj}" title="Mover loja de rota">${opcoesRota(l.rota)}</select>
+  const mover = comMover
+    ? `<div class="loja-mover"><select class="sel rota-mov" data-cnpj="${l.cnpj}" title="Mover loja de rota">${opcoesRota(l.rota)}</select></div>`
+    : '';
+  return `<div class="loja-row ${clickable ? 'click' : 'vazia'}" data-cnpj="${l.cnpj}" ${clickable ? 'tabindex="0"' : ''}>
+      <div class="loja-nome">${l.titulo}${alerta}</div>
+      <div class="loja-valor">${tem ? fmtBRL(l.valor) : '<span class="muted">—</span>'}</div>
+      <div class="loja-meta">${meta}</div>
+      ${mover}
     </div>`;
 }
 
@@ -71,29 +81,35 @@ function lojaLinha(l) {
 function rotaCard(r) {
   const lojas = r.lojas.slice().sort((a, b) => (b.qtPedidos - a.qtPedidos) || a.titulo.localeCompare(b.titulo));
   const temCarga = r.qtPedidos > 0;
-  return `<div class="rota-card">
+  const comLojas = lojas.filter((l) => l.qtPedidos > 0).length;
+  return `<div class="rota-card ${temCarga ? '' : 'rota-ociosa'}">
     <div class="rota-head">
+      <div class="rota-id">${r.codigo}</div>
       <div class="rota-head-main">
-        <div class="rota-titulo">Rota ${r.codigo} <span class="muted">· ${r.nome || 'sem nome'}</span></div>
-        <div class="rota-peso">📦 ${fmtNum(r.peso)} kg <span class="muted">de carga</span></div>
-        <div class="rota-resumo">${fmtNum(r.qtPedidos)} pedido(s) · ${fmtNum(r.qtItens)} itens · ${fmtBRL(r.valor)}</div>
+        <div class="rota-titulo">${r.nome || 'Rota sem nome'}</div>
+        <div class="rota-resumo">${comLojas} loja(s) · ${fmtNum(r.qtPedidos)} pedido(s) · ${fmtNum(r.qtItens)} itens</div>
       </div>
       <div class="rota-acoes">
         <button class="rota-print" data-cod="${r.codigo}" title="Imprimir folha desta rota" ${temCarga ? '' : 'disabled'}>🖨</button>
         <button class="rota-edit" data-cod="${r.codigo}" data-nome="${(r.nome || '').replace(/"/g, '&quot;')}" title="Editar rota">✎</button>
       </div>
     </div>
+    <div class="rota-metrics">
+      <div class="rm"><span class="rm-k">Carga</span><span class="rm-v peso">${fmtNum(r.peso)} <small>kg</small></span></div>
+      <div class="rm"><span class="rm-k">Valor</span><span class="rm-v">${fmtBRL(r.valor)}</span></div>
+    </div>
     <div class="rota-lojas">
-      ${lojas.length ? lojas.map(lojaLinha).join('') : '<div class="muted vazio-rota">Nenhuma loja nesta rota.</div>'}
+      ${lojas.length ? lojas.map((l) => lojaLinha(l, true)).join('') : '<div class="muted vazio-rota">Nenhuma loja nesta rota.</div>'}
     </div>
   </div>`;
 }
 
-function renderRotas() {
-  document.getElementById('rotas').innerHTML = DADOS.rotas.map(rotaCard).join('');
-  // mover loja de rota
-  document.querySelectorAll('.rota-mov').forEach((s) => {
+// ---- Ligações de evento reaproveitadas pelas 3 visões ----
+// Mover loja de rota (selects .rota-mov dentro de `root`).
+function wireMover(root) {
+  root.querySelectorAll('.rota-mov').forEach((s) => {
     s.addEventListener('click', (e) => e.stopPropagation());
+    s.addEventListener('keydown', (e) => e.stopPropagation());
     s.addEventListener('change', async (e) => {
       e.stopPropagation();
       try {
@@ -102,20 +118,100 @@ function renderRotas() {
       } catch (err) { alert('Falha ao mover loja: ' + err.message); }
     });
   });
-  // abrir itens da loja
-  document.querySelectorAll('.loja-row.click').forEach((row) => {
-    row.addEventListener('click', () => {
-      const loja = acharLoja(row.dataset.cnpj);
-      if (loja) abrirLoja(loja);
+}
+// Abrir o drawer de itens ao clicar (ou Enter) numa loja com pedido.
+function wireLojaRows(root) {
+  root.querySelectorAll('.loja-row.click').forEach((row) => {
+    const abrir = () => { const l = acharLoja(row.dataset.cnpj); if (l) abrirLoja(l); };
+    row.addEventListener('click', abrir);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); }
     });
   });
+}
+
+function renderRotas() {
+  const root = document.getElementById('rotas');
+  root.innerHTML = DADOS.rotas.map(rotaCard).join('');
+  wireMover(root);
+  wireLojaRows(root);
   // editar rota
-  document.querySelectorAll('.rota-edit').forEach((b) => {
+  root.querySelectorAll('.rota-edit').forEach((b) => {
     b.addEventListener('click', () => abrirModal(b.dataset.cod, b.dataset.nome));
   });
   // imprimir folha da rota
-  document.querySelectorAll('.rota-print').forEach((b) => {
+  root.querySelectorAll('.rota-print').forEach((b) => {
     b.addEventListener('click', () => imprimirFolha(b.dataset.cod));
+  });
+}
+
+// ---------------- Visão geral: todos os pedidos (sem separar por rota) ----------------
+let BUSCA_GERAL = '';
+// Achata todas as lojas (de todas as rotas + sem rota) que têm pedido no dia.
+function lojasComPedido() {
+  const todas = [];
+  DADOS.rotas.forEach((r) => r.lojas.forEach((l) => { if (l.qtPedidos > 0) todas.push({ ...l, rotaNome: r.nome }); }));
+  (DADOS.semRota.lojas || []).forEach((l) => { if (l.qtPedidos > 0) todas.push({ ...l, rotaNome: '' }); });
+  return todas;
+}
+function renderGeral() {
+  const root = document.getElementById('geral');
+  let lojas = lojasComPedido();
+  const q = BUSCA_GERAL.toLowerCase();
+  if (q) lojas = lojas.filter((l) => (l.titulo || '').toLowerCase().includes(q));
+  // ordena por peso desc (relevante para carregamento), depois por valor
+  lojas.sort((a, b) => (b.peso - a.peso) || (b.valor - a.valor));
+
+  const totPed = lojas.reduce((s, l) => s + l.qtPedidos, 0);
+  const totPeso = lojas.reduce((s, l) => s + l.peso, 0);
+  const totValor = lojas.reduce((s, l) => s + l.valor, 0);
+
+  if (!lojas.length) {
+    root.innerHTML = `<div class="panel"><div class="empty">${BUSCA_GERAL ? 'Nenhuma loja encontrada para a busca.' : 'Nenhum pedido para esta data.'}</div></div>`;
+    return;
+  }
+  const rotaChip = (l) => l.rota
+    ? `<span class="rota-chip">Rota ${l.rota}${l.rotaNome ? ' · ' + l.rotaNome : ''}</span>`
+    : `<span class="rota-chip semrota">sem rota</span>`;
+  const linhas = lojas.map((l) => {
+    const alerta = (l.alertas && l.alertas.length)
+      ? `<span class="loja-alert" title="${l.alertas.join(' · ').replace(/"/g, '&quot;')}">!</span>` : '';
+    return `<tr class="click" data-cnpj="${l.cnpj}" tabindex="0">
+      <td class="g-loja">${l.titulo}${alerta}</td>
+      <td>${rotaChip(l)}</td>
+      <td class="num">${fmtNum(l.qtPedidos)}</td>
+      <td class="num">${fmtNum(l.qtItens)}</td>
+      <td class="num">${fmtNum(l.peso)} kg</td>
+      <td class="num">${fmtBRL(l.valor)}</td>
+    </tr>`;
+  }).join('');
+  root.innerHTML = `
+    <div class="panel">
+      <div class="phead">
+        <div class="ttl">Todos os pedidos <span class="muted">· ${fmtNum(lojas.length)} loja(s)</span></div>
+        <div class="muted" style="font-size:12px">clique numa loja para ver os itens</div>
+      </div>
+      <div class="tbl-scroll">
+        <table class="geral-tbl">
+          <thead><tr>
+            <th>LOJA</th><th>ROTA</th><th class="num">PED.</th>
+            <th class="num">ITENS</th><th class="num">PESO</th><th class="num">VALOR</th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+          <tfoot><tr>
+            <td colspan="2">Total</td>
+            <td class="num">${fmtNum(totPed)}</td><td class="num"></td>
+            <td class="num">${fmtNum(totPeso)} kg</td><td class="num">${fmtBRL(totValor)}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+  wireLojaRows(root);
+  // linhas <tr class="click"> também abrem o drawer
+  root.querySelectorAll('tr.click').forEach((row) => {
+    const abrir = () => { const l = acharLoja(row.dataset.cnpj); if (l) abrirLoja(l); };
+    row.addEventListener('click', abrir);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(); } });
   });
 }
 
@@ -238,6 +334,22 @@ function montarDatas() {
   document.getElementById('arq').textContent = DADOS.arquivoPedidos ? '● pedidos carregados' : '● sem arquivo de pedidos';
 }
 
+// ---------------- Troca de visão (por rota / geral) ----------------
+let VISTA = 'rotas';   // 'rotas' | 'geral'
+function aplicarVista() {
+  const porRota = VISTA === 'rotas';
+  document.getElementById('rotas').hidden = !porRota;
+  document.getElementById('geral').hidden = porRota;
+  document.getElementById('extras').hidden = !porRota;       // extras pertencem à visão por rota
+  document.getElementById('buscaGeral').style.display = porRota ? 'none' : '';
+  document.querySelectorAll('#viewSeg button').forEach((b) => {
+    const on = b.dataset.v === VISTA;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  if (!porRota) renderGeral();
+}
+
 // ---------------- Carregar ----------------
 async function carregar() {
   DADOS = await api('/api/entregas' + (DATA ? '?data=' + DATA : ''));
@@ -246,9 +358,17 @@ async function carregar() {
   renderKpis();
   renderRotas();
   renderExtras();
+  aplicarVista();
 }
 
 // eventos
+document.querySelectorAll('#viewSeg button').forEach((b) => {
+  b.addEventListener('click', () => { VISTA = b.dataset.v; aplicarVista(); });
+});
+document.getElementById('buscaGeral').addEventListener('input', (e) => {
+  BUSCA_GERAL = e.target.value.trim();
+  if (DADOS && VISTA === 'geral') renderGeral();
+});
 document.getElementById('dataSel').addEventListener('change', (e) => { DATA = e.target.value; carregar(); });
 document.getElementById('dtEntrega').addEventListener('change', (e) => { if (e.target.value) { DATA = e.target.value; carregar(); } });
 document.getElementById('btnImprimir').addEventListener('click', () => imprimirFolha(null));

@@ -21,8 +21,18 @@
       <span class="badge-modo" id="arq"></span>
     </div>
     <div class="content">
-      <div class="cards" id="kpis"></div>
+      <div class="statbar" id="kpis"></div>
+
+      <div class="viewbar">
+        <div class="segbar" id="viewSeg" role="tablist" aria-label="Modo de visualização">
+          <button type="button" data-v="rotas" class="on" role="tab" aria-selected="true">Por rota</button>
+          <button type="button" data-v="geral" role="tab" aria-selected="false">Todos os pedidos</button>
+        </div>
+        <input id="buscaGeral" class="busca" type="search" placeholder="Buscar loja…" style="display:none" />
+      </div>
+
       <div id="rotas" class="rotas-grid"></div>
+      <div id="geral" class="geral-wrap" hidden></div>
       <div id="extras"></div>
     </div>
   </div>
