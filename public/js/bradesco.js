@@ -6,7 +6,7 @@ function isoPrimeiroDia() { const d = new Date(); return d.getFullYear() + '-' +
 
 let INI = isoPrimeiroDia();
 let FIM = isoHoje();
-let FONTE = 'demo';      // 'demo' (fixture) | 'api' (Bradesco)
+const FONTE = 'api';     // sempre API do Bradesco (modo demonstração removido)
 let DADOS = null;
 let TIPO = null;         // 'creditos' | 'debitos' | null
 let ORIGEM = 'TODAS';    // 'TODAS' | 'periodo' | 'ultimos' | 'dia'
@@ -61,21 +61,14 @@ function render() {
     return;
   }
 
-  modo.textContent = (d.fonte === 'demo' ? 'demonstração' : 'API ' + (d.modo || ''));
+  modo.textContent = 'API ' + (d.modo || '');
   document.getElementById('contaSub').textContent =
     `Conta ${d.conta.formatada}${d.conta.nome_cliente ? ' · ' + d.conta.nome_cliente : ''} · ${fmtData(d.periodo.inicio)} a ${fmtData(d.periodo.fim)}`;
 
-  // Aviso quando em demonstração (dados de exemplo, período fixo do stub).
-  if (d.fonte === 'demo') {
-    aviso.style.display = 'block';
-    aviso.className = 'aviso info';
-    aviso.innerHTML = 'Modo <b>demonstração</b>: dados de exemplo do sandbox (período fixo 06–20/11/2024). '
-      + 'A consulta real exige as credenciais de produção liberadas no portal Bradesco.';
-  } else {
-    aviso.style.display = (d.mensagens && d.mensagens.length) ? 'block' : 'none';
-    aviso.className = 'aviso info';
-    aviso.textContent = (d.mensagens || []).join(' · ');
-  }
+  // Mensagens que a API devolve (ex.: "CTAS0673 - CONSULTA EFETUADA COM SUCESSO").
+  aviso.style.display = (d.mensagens && d.mensagens.length) ? 'block' : 'none';
+  aviso.className = 'aviso info';
+  aviso.textContent = (d.mensagens || []).join(' · ');
 
   // ---- KPIs: saldo atual é o destaque ----
   const anteriorSub = d.data_saldo_anterior ? ('em ' + fmtData(d.data_saldo_anterior)) : '';
@@ -95,8 +88,10 @@ function render() {
     k.onclick = () => { TIPO = (TIPO === k.dataset.id) ? null : k.dataset.id; render(); };
   });
 
-  // ---- Tabela de lançamentos ----
-  const linhas = d.lancamentos.filter((l) => porTipo(l) && porOrigem(l) && porBusca(l));
+  // ---- Tabela de lançamentos (mais recentes no topo) ----
+  // A ponte devolve os lançamentos em ordem crescente de data; invertendo,
+  // o mais novo (inclusive o último do dia) fica no topo e os antigos descem.
+  const linhas = d.lancamentos.filter((l) => porTipo(l) && porOrigem(l) && porBusca(l)).reverse();
   const tbody = document.getElementById('lista');
   if (!linhas.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty">Nenhum lançamento para este filtro.</td></tr>`;
@@ -144,25 +139,11 @@ function render() {
 function initControls() {
   const dtIni = document.getElementById('dtIni');
   const dtFim = document.getElementById('dtFim');
-  const fonteSel = document.getElementById('fonteSel');
   dtIni.value = INI; dtFim.value = FIM;
-  fonteSel.value = FONTE;
-
-  function aplicarPeriodoDemoTravado() {
-    // No modo demonstração o período é fixo (o stub só aceita 06–20/11/2024).
-    const demo = FONTE === 'demo';
-    dtIni.disabled = demo; dtFim.disabled = demo;
-  }
-  aplicarPeriodoDemoTravado();
 
   document.getElementById('aplicar').onclick = () => {
     INI = dtIni.value || INI;
     FIM = dtFim.value || FIM;
-    carregar();
-  };
-  fonteSel.onchange = () => {
-    FONTE = fonteSel.value;
-    aplicarPeriodoDemoTravado();
     carregar();
   };
   document.getElementById('origemSel').onchange = (e) => { ORIGEM = e.target.value; render(); };
