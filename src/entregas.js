@@ -120,6 +120,11 @@ function resumoPedido(p) {
     foraRotina: !!p.entrega_fora_da_rotina,
     duplicado: !!p.duplicado,
     problemas: Array.isArray(p.problemas) ? p.problemas.length : 0,
+    // Observacoes do CORPO do e-mail (ex.: "200 kg para suco") — as mesmas que
+    // vao na folha de separacao. Mantemos como texto para exibir na pagina.
+    observacoes: Array.isArray(p.observacoes)
+      ? p.observacoes.map((o) => String(o || '').trim()).filter(Boolean)
+      : [],
     qtItens: itens.length,
     peso: round2(itens.reduce((s, i) => s + (Number(i.qtde) || 0), 0)),  // kg (qtde = peso)
     valor: round2(valor),
@@ -218,7 +223,7 @@ function montar(dataISO) {
   for (const it of info) {
     if (!it.nosso) continue;                       // outro fornecedor / não nosso: fora da carga
     if (it.duplicado) {
-      if (it.loja) addAlerta(it.key, `Pedido ${it.numero || '?'} repetido — ignorado na carga.`);
+      // Pedido repetido: já sai da carga; não gera alerta na página (ruído).
       continue;
     }
     if (it.numero && descartar.has(it.key + '|' + it.numero)) {

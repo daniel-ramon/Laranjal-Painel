@@ -36,6 +36,7 @@
         </div>
         <table>
           <thead><tr>
+            <th class="chk"><input type="checkbox" id="selAll" title="Selecionar os visíveis" /></th>
             <th>DATA</th><th>DESCRIÇÃO</th><th>DOC.</th><th>ORIGEM</th>
             <th class="num">VALOR</th><th class="num">SALDO</th>
           </tr></thead>
@@ -49,6 +50,16 @@
           <tbody id="listaFut"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- Barra flutuante: soma dos lançamentos marcados -->
+  <div id="selbar" class="selbar" hidden>
+    <div class="selbar-in">
+      <span class="selbar-n"><b id="selCount">0</b> marcado(s)</span>
+      <span class="selbar-sep">·</span>
+      <span class="selbar-sum">Soma <b id="selSoma">R$ 0,00</b></span>
+      <button id="selLimpar" class="selbar-x" type="button">limpar</button>
     </div>
   </div>
 

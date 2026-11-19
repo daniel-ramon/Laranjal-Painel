@@ -25,6 +25,23 @@ function diaSemana(iso) {
   return nomes[new Date(y, m - 1, d).getDay()];
 }
 
+// Escapa texto para inserir com segurança no HTML (observações vêm do e-mail).
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Caixa de "Observações do e-mail" (corpo do e-mail), mesma info da folha.
+function obsBox(observacoes) {
+  const obs = (observacoes || []).map((o) => String(o || '').trim()).filter(Boolean);
+  if (!obs.length) return '';
+  return `<div class="obs-box">
+    <div class="obs-ttl">📝 Observações do e-mail <span class="obs-hint">— conferir com o encarregado</span></div>
+    ${obs.map((o) => `<div class="obs-item">• ${esc(o)}</div>`).join('')}
+  </div>`;
+}
+
 // ---------------- Métricas (strip compacto) ----------------
 function renderKpis() {
   const t = DADOS.totais;
@@ -55,6 +72,9 @@ function opcoesRota(sel) {
 
 // ---------------- Card de uma loja dentro da rota ----------------
 // comMover = true mostra o seletor de rota (visão por rota); na visão geral some.
+function temObservacoes(l) {
+  return (l.pedidos || []).some((p) => (p.observacoes || []).length);
+}
 function lojaLinha(l, comMover) {
   const tem = l.qtPedidos > 0;
   const alertas = l.alertas || [];
@@ -65,6 +85,7 @@ function lojaLinha(l, comMover) {
     ? `<span class="pill pago">${fmtNum(l.qtPedidos)} ped.</span>`
       + `<span class="mi">${fmtNum(l.peso)} kg</span>`
       + `<span class="mi">${fmtNum(l.qtItens)} itens</span>`
+      + (temObservacoes(l) ? `<span class="mi obs-mi">📝 obs.</span>` : '')
     : `<span class="pill proximo">sem pedido</span>`;
   const mover = comMover
     ? `<div class="loja-mover"><select class="sel rota-mov" data-cnpj="${l.cnpj}" title="Mover loja de rota">${opcoesRota(l.rota)}</select></div>`
@@ -275,6 +296,7 @@ function abrirLoja(l) {
           <b>Pedido ${p.numero || '—'}</b>
           <span class="muted">${fmtNum(p.qtItens)} itens · ${fmtBRL(p.valor)}</span>
         </div>
+        ${obsBox(p.observacoes)}
         <table class="itens">
           <thead><tr><th>PRODUTO</th><th class="num">QTDE</th><th>EMB</th><th class="num">UNIT</th><th class="num">TOTAL</th></tr></thead>
           <tbody>

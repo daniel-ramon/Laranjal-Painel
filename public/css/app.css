@@ -198,6 +198,7 @@ td.hist { max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow
 .loja-valor { grid-column: 2; justify-self: end; font-weight: 700; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .loja-meta { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; color: var(--text-dim); font-size: 12px; margin-top: 2px; }
 .loja-meta .mi { font-variant-numeric: tabular-nums; }
+.loja-meta .obs-mi { color: #c4b5fd; }
 .loja-alert { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; font-size: 12px; color: #06121a; background: var(--amber); }
 .loja-mover { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity .12s; }
 .loja-row:hover .loja-mover, .loja-row:focus-within .loja-mover { opacity: 1; }
@@ -225,6 +226,11 @@ td.hist { max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow
 /* Pedido no drawer */
 .ped-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
 .ped-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+/* Observações do corpo do e-mail (ex.: "200 kg para suco") */
+.obs-box { background: rgba(139,92,246,.10); border: 1px solid rgba(139,92,246,.32); border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; }
+.obs-ttl { font-weight: 700; color: #c4b5fd; font-size: 12.5px; margin-bottom: 4px; }
+.obs-ttl .obs-hint { font-weight: 500; color: var(--text-dim); }
+.obs-item { color: var(--text); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
 /* ===== Modal (criar/editar rota) ===== */
 .modal { position: fixed; inset: 0; z-index: 110; display: none; }
@@ -299,6 +305,31 @@ td.num.debito { color: #fca5a5; }
 .aviso { margin-top: 14px; padding: 11px 14px; border-radius: 10px; font-size: 13px; line-height: 1.45; }
 .aviso.info { color: #93c5fd; background: rgba(59,130,246,.10); border: 1px solid rgba(59,130,246,.28); }
 .aviso.erro { color: #fca5a5; background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.30); }
+
+/* Seleção de lançamentos (checkbox + linha marcada) */
+th.chk, td.chk { width: 40px; text-align: center; padding-left: 14px; padding-right: 6px; }
+.chk input { width: 16px; height: 16px; accent-color: var(--ak); cursor: pointer; vertical-align: middle; }
+tbody tr.sel { background: rgba(45,212,191,.08); }
+tbody tr.sel:hover { background: rgba(45,212,191,.12); }
+
+/* Barra flutuante com a soma dos marcados */
+.selbar { position: fixed; left: 0; right: 0; bottom: 18px; z-index: 85; display: flex; justify-content: center; pointer-events: none; padding: 0 16px; }
+.selbar-in {
+  pointer-events: auto; display: inline-flex; align-items: center; gap: 12px;
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 999px;
+  padding: 10px 10px 10px 18px; box-shadow: 0 12px 34px rgba(0,0,0,.5);
+}
+.selbar-n { color: var(--text-dim); font-size: 13px; }
+.selbar-n b { color: var(--text); font-size: 15px; }
+.selbar-sep { color: var(--text-faint); }
+.selbar-sum { font-size: 13px; color: var(--text-dim); }
+.selbar-sum b { font-size: 16px; font-weight: 700; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.selbar-sum b.pos { color: #86efac; }
+.selbar-sum b.neg { color: #fca5a5; }
+.selbar-x { background: var(--card); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.selbar-x:hover { color: #fff; border-color: #2c3b4c; }
+/* Espaço extra para a barra não cobrir os últimos lançamentos */
+.selbar-on .content { padding-bottom: 92px; }
 
 /* ===== Responsivo (celular / tablet) ===== */
 .menu-btn { display: none; }
