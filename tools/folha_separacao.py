@@ -12,16 +12,34 @@ rota (lojas.csv) — a última página "TOTAL DO DIA" vira a carga do caminhão.
 Imprime 'OK' no stdout quando gera, 'VAZIO' quando não há pedido.
 """
 import sys
+import os
 import json
 import argparse
 from pathlib import Path
 
-PROJ = Path(r'D:\LARANJAL\pedidos-automacao')
+# Pasta do projeto pedidos-automacao. Vem de PEDIDOS_DIR (definido pelo Node a
+# partir do config/.env); cai no caminho padrão só quando a env não existe.
+# Hard-codar o caminho quebrava no servidor, onde o painel fica noutra pasta.
+_env = (os.environ.get('PEDIDOS_DIR') or '').strip()
+PROJ = Path(_env) if _env else Path(r'D:\LARANJAL\pedidos-automacao')
+
+if not PROJ.exists():
+    sys.stderr.write(
+        'Pasta do projeto de pedidos nao encontrada: ' + str(PROJ) + '\n'
+        'Defina PEDIDOS_DIR no .env do painel apontando para o pedidos-automacao.\n')
+    sys.exit(2)
+
 sys.path.insert(0, str(PROJ))
 
-import gerar_separacao as gs          # noqa: E402
-import lojas as cadastro             # noqa: E402
-from modelos import Pedido, pedido_e_nosso  # noqa: E402
+try:
+    import gerar_separacao as gs          # noqa: E402
+    import lojas as cadastro             # noqa: E402
+    from modelos import Pedido, pedido_e_nosso  # noqa: E402
+except ModuleNotFoundError as e:
+    sys.stderr.write(
+        'Nao foi possivel importar os modulos de ' + str(PROJ) + ': ' + str(e) + '\n'
+        'Confirme que PEDIDOS_DIR aponta para a pasta do pedidos-automacao.\n')
+    sys.exit(2)
 
 
 def norm_rota(v):

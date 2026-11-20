@@ -311,7 +311,11 @@ function folhaPdf(dataISO, rota) {
   if (rota) args.push('--rota', String(rota));
   const r = spawnSync(PYTHON_BIN, args, {
     encoding: 'utf8',
-    env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }),
+    // PEDIDOS_DIR diz ao script onde está o projeto pedidos-automacao (mesma
+    // pasta que o Node usa); evita o caminho fixo que quebrava no servidor.
+    env: Object.assign({}, process.env, {
+      PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', PEDIDOS_DIR: ENTREGAS.pedidosDir,
+    }),
   });
   if (r.status !== 0) {
     return { ok: false, erro: (r.stderr || r.stdout || 'falha ao gerar o PDF').trim() };
