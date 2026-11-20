@@ -391,3 +391,16 @@ tbody tr.sel:hover { background: rgba(45,212,191,.12); }
   .stat .vl { font-size: 18px; white-space: normal; }
   .rota-id { width: 38px; height: 38px; font-size: 15px; }
 }
+
+/* ===== Nordestão: upload de planilhas de adiantamento ===== */
+.upload-panel { margin-top: 0; }
+.upload-panel .up-actions { display: flex; align-items: center; gap: 8px; }
+.upload-panel .up-status { padding: 10px 18px; font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--border-soft); min-height: 0; }
+.upload-panel .up-status:empty { display: none; }
+.upload-panel .up-status.ok { color: var(--green); }
+.upload-panel .up-status.err { color: var(--red); }
+.upload-panel .up-list { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+.upload-panel .up-item { font-size: 13px; color: var(--text); }
+.upload-panel .up-item.err { color: var(--red); }
+.upload-panel .up-item span { color: var(--text-dim); }
+.upload-panel .up-item.err span { color: var(--red); }

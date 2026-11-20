@@ -88,11 +88,10 @@ async function listar(iniISO, fimISO) {
     const numnota = Number(r.NUMNOTA);
     const valor = Number(r.VALOR) || 0;
     const info = itensAd[String(numnota)] || null;
-    const dtpagoISO = toISO(r.DTPAGO);
-    const pago = !!dtpagoISO;                         // DTPAGO preenchida = já negociado
-    const adiantadoAnterior = minRef != null && numnota < minRef;
-    const adiantado = !!info || adiantadoAnterior || pago;
-    const fonte = info ? 'arquivo' : (pago ? 'pago' : (adiantadoAnterior ? 'anterior' : null));
+    // Negociado = NUMNOTA encontrado nos arquivos de adiantamento (e só isso).
+    // (Removidas as regras antigas: "NUMNOTA menor que o menor do arquivo" e DTPAGO.)
+    const adiantado = !!info;
+    const fonte = info ? 'arquivo' : null;
 
     let ad1 = null;
     if (info) {

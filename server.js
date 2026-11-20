@@ -6,6 +6,7 @@ const { PORT, USE_MOCK, EMPRESAS } = require('./src/config');
 const { buscarTitulos, buscarTitulosPorPeriodo } = require('./src/queries');
 const { agregar, monthRange } = require('./src/status');
 const nordestao = require('./src/nordestao');
+const adiantamentos = require('./src/adiantamentos');
 const entregas = require('./src/entregas');
 const bradesco = require('./src/bradesco');
 
@@ -91,6 +92,19 @@ app.get('/api/nordestao/itens', async (req, res) => {
     res.json(await nordestao.itens(numvenda));
   } catch (e) {
     res.status(500).json({ erro: String(e.message || e) });
+  }
+});
+
+// Upload de uma planilha .xlsx para a pasta de adiantamentos.
+// O corpo é o binário cru do arquivo; o nome vem no header X-Filename (URL-encoded).
+app.post('/api/nordestao/upload', express.raw({ type: '*/*', limit: '30mb' }), (req, res) => {
+  try {
+    let nome = req.get('X-Filename') || 'upload.xlsx';
+    try { nome = decodeURIComponent(nome); } catch (_) {}
+    const arquivo = adiantamentos.salvar(nome, req.body);
+    res.json({ ok: true, arquivo });
+  } catch (e) {
+    res.status(400).json({ ok: false, erro: String(e.message || e) });
   }
 });
 

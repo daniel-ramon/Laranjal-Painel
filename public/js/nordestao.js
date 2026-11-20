@@ -52,9 +52,8 @@ function render() {
     tbody.innerHTML = `<tr><td colspan="7" class="empty">Nenhum título para este filtro.</td></tr>`;
   } else {
     tbody.innerHTML = linhas.map((t, i) => {
-      const suf = t.fonte === 'anterior' ? ' (anterior)' : (t.fonte === 'pago' ? ' (pago)' : '');
       const badge = t.adiantado
-        ? `<span class="pill pago">Negociado${suf}</span>`
+        ? `<span class="pill pago">Negociado</span>`
         : `<span class="pill proximo">Disponível</span>`;
       const receb = (t.adiantamento && t.adiantamento.recebidoEst != null) ? fmtBRL(t.adiantamento.recebidoEst) : '—';
       return `<tr class="click" data-i="${i}">
@@ -84,10 +83,8 @@ function boxAdiantamento(t) {
   }
   const a = t.adiantamento;
   if (!a) {
-    const msg = t.fonte === 'pago'
-      ? { t: 'Negociado (título com pagamento registrado).', m: 'DTPAGO preenchida no contas a receber.' }
-      : { t: 'Negociado em período anterior.', m: 'Sem dados detalhados no arquivo (NUMNOTA anterior ao menor do relatório).' };
-    return `<div class="adbox"><b>${msg.t}</b><div class="muted">${msg.m}</div></div>`;
+    return `<div class="adbox"><b>Negociado (encontrado nos arquivos de adiantamento).</b>`
+      + `<div class="muted">Sem valores detalhados na planilha para este título.</div></div>`;
   }
   const linhasArq = (a.descontoArq != null || a.valorLiquidoArq != null)
     ? `<div class="adrow"><span>Desconto (arquivo)</span><b>${fmtBRL(a.descontoArq)}</b></div>
@@ -140,6 +137,60 @@ function preencherLojas() {
   LOJA = sel.value;
 }
 
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function renderArquivos() {
+  const f = (DADOS && DADOS.fonte) || {};
+  const arqs = f.arquivos || [];
+  document.getElementById('upCont').textContent = f.ok
+    ? `· ${fmtNum(f.count)} ref. em ${fmtNum(arqs.length)} arquivo(s)`
+    : '· nenhum arquivo lido';
+  const list = document.getElementById('upList');
+  if (!arqs.length) {
+    list.innerHTML = `<div class="muted">Nenhuma planilha na pasta. Use "Enviar .xlsx" para adicionar.</div>`;
+    return;
+  }
+  list.innerHTML = arqs.map((a) => a.erro
+    ? `<div class="up-item err">📄 ${escHtml(a.arquivo)} <span>— erro: ${escHtml(a.erro)}</span></div>`
+    : `<div class="up-item">📄 ${escHtml(a.arquivo)} <span class="muted">— ${fmtNum(a.linhas)} linha(s)</span></div>`
+  ).join('');
+}
+
+async function enviarArquivo(file) {
+  const resp = await fetch('/api/nordestao/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name) },
+    body: file,
+  });
+  const j = await resp.json().catch(() => ({ ok: false, erro: 'resposta inválida' }));
+  if (!resp.ok || !j.ok) throw new Error(j.erro || ('HTTP ' + resp.status));
+  return j.arquivo;
+}
+
+async function enviarArquivos(fileList) {
+  const files = [...fileList].filter((f) => /\.xlsx$/i.test(f.name));
+  const st = document.getElementById('upStatus');
+  if (!files.length) { st.className = 'up-status err'; st.textContent = 'Selecione arquivos .xlsx.'; return; }
+  const btn = document.getElementById('upBtn');
+  btn.disabled = true;
+  st.className = 'up-status'; st.textContent = `Enviando ${files.length} arquivo(s)…`;
+  const okNomes = [], erros = [];
+  for (const f of files) {
+    try { okNomes.push(await enviarArquivo(f)); }
+    catch (e) { erros.push(`${f.name}: ${e.message}`); }
+  }
+  if (okNomes.length) {
+    st.className = 'up-status ok';
+    st.textContent = `Enviado(s): ${okNomes.join(', ')}` + (erros.length ? ` · falhas: ${erros.join(' | ')}` : '');
+  } else {
+    st.className = 'up-status err';
+    st.textContent = `Falha: ${erros.join(' | ')}`;
+  }
+  btn.disabled = false;
+  await carregar();   // reprocessa a pasta e atualiza títulos/KPIs/lista de arquivos
+}
+
 async function carregar() {
   document.getElementById('dtIni').value = INI;
   document.getElementById('dtFim').value = FIM;
@@ -147,9 +198,10 @@ async function carregar() {
   document.getElementById('modo').textContent = DADOS.modo === 'exemplo' ? '● dados de exemplo' : '● Oracle';
   const f = DADOS.fonte || {};
   document.getElementById('fonte').textContent = f.ok
-    ? `● ${f.count} ref. · menor ${f.min}`
+    ? `● ${f.count} ref. em ${(f.arquivos || []).length} arquivo(s)`
     : '● sem arquivo de adiantamento';
   preencherLojas();
+  renderArquivos();
   render();
 }
 
@@ -166,6 +218,14 @@ document.getElementById('dtIni').addEventListener('change', aplicarDatas);
 document.getElementById('dtFim').addEventListener('change', aplicarDatas);
 document.getElementById('lojaSel').addEventListener('change', (e) => { LOJA = e.target.value; if (DADOS) render(); });
 document.getElementById('busca').addEventListener('input', (e) => { BUSCA = e.target.value.trim(); if (DADOS) render(); });
+document.getElementById('upBtn').addEventListener('click', () => document.getElementById('upFile').click());
+document.getElementById('upFile').addEventListener('change', (e) => {
+  const files = e.target.files;
+  if (files && files.length) enviarArquivos(files).catch((err) => {
+    const st = document.getElementById('upStatus'); st.className = 'up-status err'; st.textContent = 'Falha: ' + err.message;
+  });
+  e.target.value = '';   // permite reenviar o mesmo arquivo
+});
 document.getElementById('drawerBg').addEventListener('click', fecharDetalhe);
 document.getElementById('drawerX').addEventListener('click', fecharDetalhe);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharDetalhe(); });

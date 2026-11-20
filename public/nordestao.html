@@ -23,6 +23,17 @@
       <span class="badge-modo" id="fonte" title="Arquivos de adiantamento lidos"></span>
     </div>
     <div class="content">
+      <div class="panel upload-panel">
+        <div class="phead">
+          <div class="ttl">Arquivos de adiantamento <span class="muted" id="upCont"></span></div>
+          <div class="up-actions">
+            <input id="upFile" type="file" accept=".xlsx,.XLSX" multiple hidden />
+            <button id="upBtn" class="sel btn-aplicar" type="button">Enviar .xlsx</button>
+          </div>
+        </div>
+        <div id="upStatus" class="up-status"></div>
+        <div id="upList" class="up-list"></div>
+      </div>
       <div class="kpis" id="kpis"></div>
       <div class="panel">
         <div class="phead">

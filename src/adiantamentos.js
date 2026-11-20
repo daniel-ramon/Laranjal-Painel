@@ -1,4 +1,5 @@
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { PYTHON_BIN, NORDESTAO } = require('./config');
@@ -33,5 +34,22 @@ async function get() {
   cacheTime = Date.now();
   return cache;
 }
+// Invalida o cache (após novo upload a planilha precisa ser relida).
+function reset() { cache = null; cacheTime = 0; }
 
-module.exports = { get };
+// Salva um arquivo .xlsx enviado na pasta de adiantamentos e invalida o cache.
+// Devolve o nome final gravado. Lança erro se não for .xlsx ou o buffer for vazio.
+function salvar(nomeOriginal, buffer) {
+  if (!buffer || !buffer.length) throw new Error('Arquivo vazio.');
+  // só o nome-base, sem caminhos, e sem caracteres inválidos do Windows
+  let base = path.basename(String(nomeOriginal || '')).replace(/[\\/:*?"<>|\r\n]/g, '_').trim();
+  if (!base) throw new Error('Nome de arquivo inválido.');
+  if (!/\.xlsx$/i.test(base)) throw new Error('Só arquivos .xlsx são aceitos.');
+  const dir = NORDESTAO.pastaArquivos;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, base), buffer);
+  reset();
+  return base;
+}
+
+module.exports = { get, reset, salvar };
