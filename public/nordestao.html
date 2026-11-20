@@ -20,20 +20,12 @@
       <select id="lojaSel" class="sel"><option value="TODAS">Todas as lojas</option></select>
       <input id="busca" class="busca" type="search" placeholder="Buscar loja ou nº da nota…" />
       <span class="badge-modo" id="modo"></span>
-      <span class="badge-modo" id="fonte" title="Arquivos de adiantamento lidos"></span>
+      <span class="badge-modo" id="fonte" title="Planilhas de adiantamento na pasta"></span>
+      <input id="upFile" type="file" accept=".xlsx,.XLSX" multiple hidden />
+      <button id="upBtn" class="sel up-mini" type="button" title="Enviar planilha(s) de adiantamento (.xlsx)">⬆ Enviar .xlsx</button>
+      <span id="upStatus" class="up-status"></span>
     </div>
     <div class="content">
-      <div class="panel upload-panel">
-        <div class="phead">
-          <div class="ttl">Arquivos de adiantamento <span class="muted" id="upCont"></span></div>
-          <div class="up-actions">
-            <input id="upFile" type="file" accept=".xlsx,.XLSX" multiple hidden />
-            <button id="upBtn" class="sel btn-aplicar" type="button">Enviar .xlsx</button>
-          </div>
-        </div>
-        <div id="upStatus" class="up-status"></div>
-        <div id="upList" class="up-list"></div>
-      </div>
       <div class="kpis" id="kpis"></div>
       <div class="panel">
         <div class="phead">

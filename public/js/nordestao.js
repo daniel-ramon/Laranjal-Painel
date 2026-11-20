@@ -137,26 +137,6 @@ function preencherLojas() {
   LOJA = sel.value;
 }
 
-function escHtml(s) {
-  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-function renderArquivos() {
-  const f = (DADOS && DADOS.fonte) || {};
-  const arqs = f.arquivos || [];
-  document.getElementById('upCont').textContent = f.ok
-    ? `· ${fmtNum(f.count)} ref. em ${fmtNum(arqs.length)} arquivo(s)`
-    : '· nenhum arquivo lido';
-  const list = document.getElementById('upList');
-  if (!arqs.length) {
-    list.innerHTML = `<div class="muted">Nenhuma planilha na pasta. Use "Enviar .xlsx" para adicionar.</div>`;
-    return;
-  }
-  list.innerHTML = arqs.map((a) => a.erro
-    ? `<div class="up-item err">📄 ${escHtml(a.arquivo)} <span>— erro: ${escHtml(a.erro)}</span></div>`
-    : `<div class="up-item">📄 ${escHtml(a.arquivo)} <span class="muted">— ${fmtNum(a.linhas)} linha(s)</span></div>`
-  ).join('');
-}
-
 async function enviarArquivo(file) {
   const resp = await fetch('/api/nordestao/upload', {
     method: 'POST',
@@ -180,15 +160,17 @@ async function enviarArquivos(fileList) {
     try { okNomes.push(await enviarArquivo(f)); }
     catch (e) { erros.push(`${f.name}: ${e.message}`); }
   }
-  if (okNomes.length) {
-    st.className = 'up-status ok';
-    st.textContent = `Enviado(s): ${okNomes.join(', ')}` + (erros.length ? ` · falhas: ${erros.join(' | ')}` : '');
+  if (okNomes.length && !erros.length) {
+    st.className = 'up-status ok'; st.textContent = `✓ ${okNomes.length} arquivo(s) enviado(s)`;
+  } else if (okNomes.length) {
+    st.className = 'up-status ok'; st.textContent = `✓ ${okNomes.length} ok · ${erros.length} falha(s)`;
   } else {
-    st.className = 'up-status err';
-    st.textContent = `Falha: ${erros.join(' | ')}`;
+    st.className = 'up-status err'; st.textContent = `✗ falha: ${erros[0] || 'erro no envio'}`;
   }
   btn.disabled = false;
-  await carregar();   // reprocessa a pasta e atualiza títulos/KPIs/lista de arquivos
+  if (st._t) clearTimeout(st._t);
+  st._t = setTimeout(() => { st.textContent = ''; st.className = 'up-status'; }, 6000);
+  await carregar();   // reprocessa a pasta e atualiza a contagem/KPIs/títulos
 }
 
 async function carregar() {
@@ -197,11 +179,11 @@ async function carregar() {
   DADOS = await api('/api/nordestao?ini=' + INI + '&fim=' + FIM);
   document.getElementById('modo').textContent = DADOS.modo === 'exemplo' ? '● dados de exemplo' : '● Oracle';
   const f = DADOS.fonte || {};
+  const nArq = (f.arquivos || []).length;
   document.getElementById('fonte').textContent = f.ok
-    ? `● ${f.count} ref. em ${(f.arquivos || []).length} arquivo(s)`
+    ? `● ${fmtNum(nArq)} documento(s) na pasta`
     : '● sem arquivo de adiantamento';
   preencherLojas();
-  renderArquivos();
   render();
 }
 
