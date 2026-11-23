@@ -26,16 +26,38 @@ function carregar() {
   });
 }
 
-// Cache curto (10s) para não reprocessar a planilha a cada requisição.
-let cache = null, cacheTime = 0;
+// Assinatura da pasta: nomes + tamanho + data de modificação dos .xlsx.
+// Se qualquer arquivo for adicionado, removido ou alterado (inclusive quando
+// copiado na mão para a pasta), a assinatura muda e o cache é descartado — o
+// reprocessamento passa a ser imediato, igual ao que o upload já fazia.
+function assinaturaPasta() {
+  try {
+    const dir = NORDESTAO.pastaArquivos;
+    const nomes = fs.readdirSync(dir)
+      .filter((n) => /\.xlsx$/i.test(n) && !n.startsWith('~$'))
+      .sort();
+    return nomes.map((n) => {
+      const st = fs.statSync(path.join(dir, n));
+      return n + ':' + st.size + ':' + Math.round(st.mtimeMs);
+    }).join('|');
+  } catch (e) {
+    return 'ERR:' + e.message;
+  }
+}
+
+// Cache invalidado por mudança na pasta; TTL longo só como rede de segurança.
+let cache = null, cacheSig = null, cacheTime = 0;
+const TTL_MS = 5 * 60 * 1000;
 async function get() {
-  if (cache && Date.now() - cacheTime < 10000) return cache;
+  const sig = assinaturaPasta();
+  if (cache && sig === cacheSig && Date.now() - cacheTime < TTL_MS) return cache;
   cache = await carregar();
+  cacheSig = sig;
   cacheTime = Date.now();
   return cache;
 }
 // Invalida o cache (após novo upload a planilha precisa ser relida).
-function reset() { cache = null; cacheTime = 0; }
+function reset() { cache = null; cacheSig = null; cacheTime = 0; }
 
 // Salva um arquivo .xlsx enviado na pasta de adiantamentos e invalida o cache.
 // Devolve o nome final gravado. Lança erro se não for .xlsx ou o buffer for vazio.
