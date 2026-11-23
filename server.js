@@ -7,6 +7,7 @@ const { buscarTitulos, buscarTitulosPorPeriodo } = require('./src/queries');
 const { agregar, monthRange } = require('./src/status');
 const nordestao = require('./src/nordestao');
 const adiantamentos = require('./src/adiantamentos');
+const vendas = require('./src/vendas');
 const entregas = require('./src/entregas');
 const bradesco = require('./src/bradesco');
 
@@ -30,6 +31,13 @@ function primeiroDiaMes() {
 }
 function hojeISO() {
   const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+    + '-' + String(d.getDate()).padStart(2, '0');
+}
+function segundaDestaSemanaISO() {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const dow = d.getDay();                         // 0=dom..6=sab
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
     + '-' + String(d.getDate()).padStart(2, '0');
 }
@@ -105,6 +113,18 @@ app.post('/api/nordestao/upload', express.raw({ type: '*/*', limit: '30mb' }), (
     res.json({ ok: true, arquivo });
   } catch (e) {
     res.status(400).json({ ok: false, erro: String(e.message || e) });
+  }
+});
+
+// ===== Vendas (saídas das 5 frutas por DTMOV; AK filial 02 + JRF filial 01) =====
+app.get('/api/vendas', async (req, res) => {
+  try {
+    const ini = validarData(req.query.ini, segundaDestaSemanaISO());
+    const fim = validarData(req.query.fim, hojeISO());
+    const dados = await vendas.listar(ini, fim);
+    res.json(Object.assign({ modo: USE_MOCK ? 'exemplo' : 'oracle' }, dados));
+  } catch (e) {
+    res.status(500).json({ erro: String(e.message || e) });
   }
 });
 

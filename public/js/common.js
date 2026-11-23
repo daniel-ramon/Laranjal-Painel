@@ -96,6 +96,10 @@ function sidebar(active) {
     <nav class="nav">
       <a href="nordestao.html" class="${active === 'nordestao' ? 'active' : ''}"><span class="ico">◧</span>Nordestão</a>
     </nav>
+    <div class="nav-label">COMERCIAL</div>
+    <nav class="nav">
+      <a href="vendas.html" class="${active === 'vendas' ? 'active' : ''}"><span class="ico">📈</span>Vendas</a>
+    </nav>
     <div class="nav-label">BANCO</div>
     <nav class="nav">
       <a href="bradesco.html" class="${active === 'bradesco' ? 'active' : ''}"><span class="ico">🏦</span>Bradesco</a>
