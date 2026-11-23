@@ -397,6 +397,7 @@ tbody tr.sel:hover { background: rgba(45,212,191,.12); }
 .kpis-3 { grid-template-columns: repeat(3, 1fr); }
 .vkpi .vq { font-size: 15px; font-weight: 600; color: var(--text-dim); margin-top: 2px; }
 .vkpi .vq span { font-size: 12px; font-weight: 400; }
+tbody tr.tot td { border-top: 2px solid var(--border); color: var(--text); }
 .chart-leg { display: flex; gap: 14px; font-size: 12px; }
 .chart-leg .lg-vlr { color: var(--ak); }
 .chart-leg .lg-qt { color: var(--amber); }

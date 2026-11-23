@@ -11,7 +11,7 @@
   <div class="main">
     <div class="topbar">
       <h1>Vendas</h1>
-      <div class="sub">Saídas das 5 frutas (AK + JRF) por data de movimento · quantidade e valor</div>
+      <div class="sub">Saídas das 5 frutas (AK + JRF) por data de movimento · bruto, devoluções e líquido</div>
     </div>
     <div class="controls">
       <label class="dtlbl">De <input id="dtIni" class="sel" type="date" /></label>
@@ -25,25 +25,25 @@
         <button data-g="ceasa" role="tab" type="button">Ceasa</button>
       </div>
 
-      <div class="kpis kpis-3" id="kpis"></div>
+      <div class="kpis" id="kpis"></div>
 
       <div class="panel">
-        <div class="phead">
-          <div class="ttl">Curva de vendas <span class="muted" id="chartSub"></span></div>
-          <div class="chart-leg">
-            <span class="lg lg-vlr">● Valor (R$)</span>
-            <span class="lg lg-qt">● Quantidade (kg)</span>
-          </div>
-        </div>
-        <div class="chart-wrap" id="chartWrap"></div>
+        <div class="phead"><div class="ttl">Por produto <span class="muted" id="prodSub"></span></div></div>
+        <table>
+          <thead><tr>
+            <th>PRODUTO</th><th class="num">QTD (kg)</th><th class="num">VENDA</th>
+            <th class="num">DEVOL.</th><th class="num">LÍQUIDO</th>
+          </tr></thead>
+          <tbody id="listaProd"></tbody>
+        </table>
       </div>
 
       <div class="panel">
         <div class="phead"><div class="ttl">Por dia <span class="muted" id="tblSub"></span></div></div>
         <table>
           <thead><tr>
-            <th>DIA</th><th class="num">QTD (kg)</th><th class="num">VALOR</th>
-            <th class="num">PEDIDOS</th><th class="num">TICKET MÉDIO/kg</th>
+            <th>DIA</th><th class="num">QTD (kg)</th><th class="num">VENDA</th>
+            <th class="num">DEVOL.</th><th class="num">LÍQUIDO</th><th class="num">PEDIDOS</th>
           </tr></thead>
           <tbody id="lista"></tbody>
         </table>
