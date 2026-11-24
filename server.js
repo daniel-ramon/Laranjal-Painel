@@ -128,6 +128,17 @@ app.get('/api/vendas', async (req, res) => {
   }
 });
 
+// Planejamento de compra: quantidade por produto × dia da semana nas N últimas
+// semanas fechadas (padrão 4). Só quantidade; o período é calculado no servidor.
+app.get('/api/vendas/planejamento', async (req, res) => {
+  try {
+    const dados = await vendas.planejamento(req.query.semanas);
+    res.json(Object.assign({ modo: USE_MOCK ? 'exemplo' : 'oracle' }, dados));
+  } catch (e) {
+    res.status(500).json({ erro: String(e.message || e) });
+  }
+});
+
 // ===== Entregas (acompanhamento por caminhão/rota) =====
 app.get('/api/entregas', (req, res) => {
   try { res.json(entregas.montar(req.query.data)); }

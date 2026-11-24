@@ -13,7 +13,7 @@
       <h1>Vendas</h1>
       <div class="sub">Saídas das 5 frutas (AK + JRF) por data de movimento · bruto, devoluções e líquido</div>
     </div>
-    <div class="controls">
+    <div class="controls" id="ctlDatas">
       <label class="dtlbl">De <input id="dtIni" class="sel" type="date" /></label>
       <label class="dtlbl">Até <input id="dtFim" class="sel" type="date" /></label>
       <button id="aplicar" class="sel btn-aplicar" type="button">Aplicar</button>
@@ -23,8 +23,63 @@
       <div class="segbar" id="abas" role="tablist">
         <button data-g="entregas" class="on" role="tab" type="button">Entregas</button>
         <button data-g="ceasa" role="tab" type="button">Ceasa</button>
+        <button data-g="plan" role="tab" type="button">Planejamento</button>
       </div>
 
+      <!-- ===== Visão Planejamento (produto × dia da semana) ===== -->
+      <div id="viewPlan" hidden>
+        <div class="ctl-row">
+          <div class="ctl-group">
+            <span class="ctl-lbl">Origem</span>
+            <div class="segbar" id="segGrupo">
+              <button type="button" data-v="todos" class="on">Tudo</button>
+              <button type="button" data-v="entregas">Entregas</button>
+              <button type="button" data-v="ceasa">Ceasa</button>
+            </div>
+          </div>
+          <div class="ctl-group">
+            <span class="ctl-lbl">Referência</span>
+            <div class="segbar" id="segMetrica">
+              <button type="button" data-v="media" class="on">Média</button>
+              <button type="button" data-v="mediana">Mediana</button>
+              <button type="button" data-v="max">Pico</button>
+            </div>
+          </div>
+          <div class="ctl-group">
+            <span class="ctl-lbl">Visão</span>
+            <div class="segbar" id="segVisao">
+              <button type="button" data-v="matriz" class="on">Matriz</button>
+              <button type="button" data-v="semanas">Semana a semana</button>
+            </div>
+          </div>
+          <div class="periodo-chip">
+            <span id="planSemanas">semanas fechadas</span>
+            <b id="planPeriodo">—</b>
+          </div>
+        </div>
+
+        <div class="statbar" id="planStats"></div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="phead">
+            <div class="ttl">Quantidade por produto e dia da semana
+              <span class="muted" id="planSub"></span>
+            </div>
+            <div class="heat-leg"><span>menos</span><span class="heat-bar"></span><span>mais</span></div>
+          </div>
+          <div class="mx-wrap" id="planMatriz"></div>
+          <div class="mx-wrap" id="planWk" hidden></div>
+        </div>
+
+        <div class="dd-note" style="margin-top:16px">
+          Cada célula é a <b>referência escolhida</b> (média/mediana/pico) das semanas fechadas para aquele
+          produto naquele dia. As barrinhas são as semanas, da mais antiga à mais recente — a última, em
+          destaque. Clique numa célula para ver as datas.
+        </div>
+      </div>
+
+      <!-- ===== Visão Entregas / Ceasa (existente) ===== -->
+      <div id="viewVendas">
       <div class="kpis" id="kpis"></div>
 
       <div class="panel">
@@ -48,6 +103,22 @@
           <tbody id="lista"></tbody>
         </table>
       </div>
+      </div><!-- /viewVendas -->
+    </div>
+  </div>
+
+  <!-- Detalhe de uma célula da matriz (produto × dia) -->
+  <div class="drawer" id="dd">
+    <div class="drawer-bg" data-fechar></div>
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <div>
+          <div class="drawer-ttl" id="ddTtl">—</div>
+          <div class="muted" id="ddSub" style="font-size:12.5px;margin-top:3px"></div>
+        </div>
+        <button class="drawer-x" type="button" data-fechar>✕</button>
+      </div>
+      <div class="drawer-body" id="ddBody"></div>
     </div>
   </div>
 

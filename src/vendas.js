@@ -27,10 +27,15 @@ function parseISO(s) {
   const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
   return new Date(y, m - 1, d);
 }
-function maisUmDiaISO(iso) {
+function somaDiasISO(iso, n) {
   const d = parseISO(iso);
-  d.setDate(d.getDate() + 1);
+  d.setDate(d.getDate() + n);
   return isoDate(d);
+}
+function maisUmDiaISO(iso) { return somaDiasISO(iso, 1); }
+// Dias entre duas datas ISO (inteiro; ignora horário/DST).
+function diasEntreISO(a, b) {
+  return Math.round((parseISO(b) - parseISO(a)) / 86400000);
 }
 function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 // Segunda-feira (ISO) da semana que contém a data — chave para agrupar por semana.
@@ -222,4 +227,113 @@ async function listar(iniISO, fimISO) {
   };
 }
 
-module.exports = { listar };
+// ===== Planejamento: quantidade por produto × dia da semana, nas N últimas
+// semanas FECHADAS (segunda a domingo). A semana corrente fica de fora para não
+// diluir as médias com dias que ainda não aconteceram. =====
+
+// Rótulos dos dias na ordem da matriz (índice 0 = segunda).
+const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+// Só a quantidade (bruta, OPERACAO='S'): o planejamento de compra olha o que
+// saiu, por dia e por produto. Valores em R$ não entram nesta visão.
+function sqlPlan(emp) {
+  const { from, grp, where } = partesSQL(emp);
+  return `SELECT TRUNC(m.DTMOV) AS D, ${grp} AS GRP, m.CODPROD AS CP,
+       SUM(CASE WHEN m.OPERACAO='S' THEN m.QT ELSE 0 END) AS QT
+  FROM ${from}
+ ${where}
+ GROUP BY TRUNC(m.DTMOV), ${grp}, m.CODPROD`;
+}
+
+// Matriz zerada: { codProduto: [ [s1..sN] por dia ] }.
+function matrizVazia(nSemanas) {
+  const m = {};
+  CODPROD_FRUTAS.forEach((cod) => {
+    m[cod] = DIAS_SEMANA.map(() => new Array(nSemanas).fill(0));
+  });
+  return m;
+}
+
+// Gera uma matriz de exemplo (modo demonstração, sem banco).
+function exemploPlan(nSemanas) {
+  const perfis = {
+    1:  { base: 9200, dia: [1.00, .72, .95, .70, 1.18, .42, 0] },
+    32: { base: 3100, dia: [1.05, .60, .90, .66, 1.25, .30, 0] },
+    3:  { base: 2450, dia: [.95, .80, 1.05, .78, 1.10, .55, 0] },
+    2:  { base: 1850, dia: [1.10, .70, .98, .74, 1.05, .48, 0] },
+    13: { base: 980,  dia: [.88, .92, 1.00, .85, 1.12, .62, 0] },
+  };
+  let seed = 42;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const mE = matrizVazia(nSemanas), mC = matrizVazia(nSemanas);
+  CODPROD_FRUTAS.forEach((cod) => {
+    const p = perfis[cod] || { base: 1000, dia: [1, 1, 1, 1, 1, .5, 0] };
+    DIAS_SEMANA.forEach((_, i) => {
+      for (let w = 0; w < nSemanas; w++) {
+        const q = Math.round(p.base * (p.dia[i] || 0) * (0.84 + rnd() * 0.32) / 5) * 5;
+        mE[cod][i][w] = q;
+        mC[cod][i][w] = Math.round(q * 0.6 / 5) * 5;
+      }
+    });
+  });
+  return { E: mE, C: mC };
+}
+
+function somaMatrizes(a, b, nSemanas) {
+  const m = matrizVazia(nSemanas);
+  CODPROD_FRUTAS.forEach((cod) => {
+    DIAS_SEMANA.forEach((_, i) => {
+      for (let w = 0; w < nSemanas; w++) m[cod][i][w] = a[cod][i][w] + b[cod][i][w];
+    });
+  });
+  return m;
+}
+
+async function planejamento(nSemanas) {
+  const n = Math.min(Math.max(parseInt(nSemanas, 10) || 4, 1), 12);
+  // Segunda desta semana → primeiro dia ainda "aberto"; tudo antes dela é fechado.
+  const segAtual = segundaISO(isoDate(new Date()));
+  const ini = somaDiasISO(segAtual, -7 * n);
+  const fimExcl = segAtual;                      // consulta é [ini, fimExcl)
+  const semanas = Array.from({ length: n }, (_, w) => ({
+    ini: somaDiasISO(ini, 7 * w),
+    fim: somaDiasISO(ini, 7 * w + 6),
+  }));
+
+  let porGrupo;
+  if (USE_MOCK) {
+    porGrupo = exemploPlan(n);
+  } else {
+    const partes = await Promise.all(
+      EMPRESAS.map((emp) => dbj.query(emp.id, sqlPlan(emp), ini, fimExcl))
+    );
+    porGrupo = { E: matrizVazia(n), C: matrizVazia(n) };
+    partes.forEach((rows) => {
+      (rows || []).forEach((r) => {
+        const cod = Number(r.CP);
+        if (!porGrupo.E[cod]) return;            // produto fora da lista
+        const data = String(r.D).slice(0, 10);
+        const off = diasEntreISO(ini, data);
+        if (off < 0 || off >= n * 7) return;     // fora da janela (defensivo)
+        const w = Math.floor(off / 7);
+        const i = off % 7;                       // 0 = segunda, pois `ini` é segunda
+        const g = String(r.GRP) === 'E' ? 'E' : 'C';
+        porGrupo[g][cod][i][w] += Number(r.QT) || 0;
+      });
+    });
+  }
+
+  return {
+    ini, fim: somaDiasISO(fimExcl, -1), semanas, dias: DIAS_SEMANA,
+    produtos: CODPROD_FRUTAS.map((cod) => ({
+      cod, nome: NOMES_FRUTAS[cod] || ('Produto ' + cod),
+    })),
+    matriz: {
+      entregas: porGrupo.E,
+      ceasa: porGrupo.C,
+      todos: somaMatrizes(porGrupo.E, porGrupo.C, n),
+    },
+  };
+}
+
+module.exports = { listar, planejamento };
