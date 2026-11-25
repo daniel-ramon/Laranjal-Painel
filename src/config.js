@@ -78,6 +78,21 @@ const EMPRESAS = [
   },
 ];
 
+// ===== Parceiros do próprio grupo (página Vendas) =====
+// São as empresas do grupo cadastradas como parceiro. O que sai para elas é
+// transferência/venda interna, não venda a cliente: entra em lotes enormes e
+// esporádicos (ex.: 42.500 kg de laranja num único pedido em 28/10/2026) e
+// distorce as médias do planejamento. Todos estão sem CODATIV, então cairiam
+// no grupo "Ceasa". Os códigos são os mesmos nas duas bases.
+// Ficaram de fora de propósito: 229 (FGTS RECISORIO, não é cliente) e
+// 1220 (ROSELANE RODRIGUES DE FREITAS, pessoa física que pode ser cliente real).
+const PARCEIROS_INTERNOS = [
+  62,    // JOSE RODRIGUES DE FREITAS ME  · O LARANJAL
+  377,   // AK HORTIFRUTI LTDA            · ANNA K
+  503,   // JOSE RODRIGUES DE FREITAS EPP · O LARANJAL
+  1537,  // AK HORTIFRUTI LTDA            · O LARANJAL
+];
+
 // Mapeamento de colunas da tabela CPAGAR (ajuste aqui se o nome mudar).
 const CPAGAR = {
   tabela: 'CPAGAR',
@@ -174,5 +189,6 @@ module.exports = {
   ORACLE_CLIENT_LIB_DIR: process.env.ORACLE_CLIENT_LIB_DIR || '',
   ORACLE_TNS_ADMIN: process.env.ORACLE_TNS_ADMIN || '',
   EMPRESAS,
+  PARCEIROS_INTERNOS,
   CPAGAR,
 };

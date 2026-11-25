@@ -142,6 +142,12 @@ function cv(a) {
 }
 const kg = (n) => fmtNum(Math.round(n));
 const curto = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+// Data real de um dia dentro de uma semana (semana.ini é sempre uma segunda).
+function diaDaSemanaISO(iniSemana, diaIdx) {
+  const d = new Date(iniSemana + 'T00:00:00');
+  d.setDate(d.getDate() + diaIdx);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
 const nomeMetrica = () => (PMETRICA === 'media' ? 'média' : PMETRICA === 'mediana' ? 'mediana' : 'pico');
 const refDe = (a) => (PMETRICA === 'media' ? media(a) : PMETRICA === 'mediana' ? mediana(a) : maxv(a));
 
@@ -328,7 +334,7 @@ function abrirDetalhe(cod, i) {
 
   const barras = serie.map((v, w) => `
     <div class="dd-bar">
-      <span class="dt">S${w + 1} · ${curto(PLAN.semanas[w].ini)}</span>
+      <span class="dt">S${w + 1} · ${curto(diaDaSemanaISO(PLAN.semanas[w].ini, i))}</span>
       <span class="tr"><span class="fl ${w === serie.length - 1 ? '' : 'dim'}" style="width:${Math.max(2, v / mx * 100)}%"></span></span>
       <span class="vl">${v ? kg(v) : '—'}</span>
     </div>`).join('');

@@ -2,7 +2,7 @@
 // Página "Vendas": acompanha as vendas (saídas) das 5 frutas na MOVIMENTACAO,
 // somando AK (AKHORTIFRUTI/filial 02) + JRF (LARANJAL/filial 01), por DTMOV.
 // Duas abas: "Entregas" = clientes da lista (faturados só na AK) e "Ceasa" = demais.
-const { EMPRESAS, USE_MOCK } = require('./config');
+const { EMPRESAS, USE_MOCK, PARCEIROS_INTERNOS } = require('./config');
 const dbj = require('./db-jdbc');
 
 // Produtos considerados (mesmos códigos nas duas bases): Laranja, Laranja P,
@@ -58,9 +58,14 @@ function partesSQL(emp) {
   const grp = emp.id === 'AK'
     ? `CASE WHEN e.CODPARC IS NOT NULL THEN 'E' ELSE 'C' END`
     : `'C'`;
+  // Saídas para as empresas do próprio grupo são transferência, não venda:
+  // ficam de fora das três abas. (IS NULL explícito porque `NOT IN` com um
+  // CODPARC nulo daria NULL e descartaria a linha em silêncio.)
+  const semInternos = PARCEIROS_INTERNOS.length
+    ? `\n   AND (m.CODPARC IS NULL OR m.CODPARC NOT IN (${PARCEIROS_INTERNOS.join(',')}))` : '';
   const where = `WHERE m.OPERACAO IN ('S','ED')
    AND m.CODFILIAL = '${emp.filial}'
-   AND m.CODPROD IN (${CODPROD_FRUTAS.join(',')})
+   AND m.CODPROD IN (${CODPROD_FRUTAS.join(',')})${semInternos}
    AND m.DTMOV >= TO_DATE(:ini,'YYYY-MM-DD')
    AND m.DTMOV <  TO_DATE(:fim,'YYYY-MM-DD')`;
   // Somas condicionais reutilizadas: bruto (S) e devolução (ED), qtd e valor.
