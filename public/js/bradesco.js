@@ -164,6 +164,7 @@ function render() {
   atualizarSelbar();
   document.getElementById('cont').textContent = `· ${linhas.length} de ${d.lancamentos.length}`;
   const fLbl = TIPO ? (TIPO === 'creditos' ? 'Créditos' : 'Débitos') : '';
+  document.getElementById('tipoSel').value = TIPO || '';
   document.getElementById('filtro').textContent = fLbl ? ('Filtro: ' + fLbl) : '';
   document.getElementById('limpar').style.display = TIPO ? 'inline' : 'none';
   document.getElementById('limpar').onclick = () => { TIPO = null; render(); };
@@ -198,6 +199,7 @@ function initControls() {
     FIM = dtFim.value || FIM;
     carregar();
   };
+  document.getElementById('tipoSel').onchange = (e) => { TIPO = e.target.value || null; render(); };
   document.getElementById('origemSel').onchange = (e) => { ORIGEM = e.target.value; render(); };
   document.getElementById('busca').oninput = (e) => { BUSCA = e.target.value; render(); };
   document.getElementById('selLimpar').onclick = () => { SEL.clear(); render(); };
