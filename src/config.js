@@ -175,6 +175,108 @@ const BRADESCO = {
   demoPeriodo: { inicio: '2024-11-06', fim: '2024-11-20' },
 };
 
+
+// ===== Página Despesas (DRE analítico) =====
+// Reproduz o relatório analítico de despesas do Bspac9740 (Balancete/DRE) nas
+// duas bases. Regras de apuração CONFERIDAS contra o relatório do sistema
+// (AK, filial 02, 01/11 a 26/11/2026: R$ 138.131,07 em 36 lançamentos):
+//   1) data considerada = DTPAGO dentro do intervalo (não é DTVENC nem DTBAIXA);
+//   2) fora os desdobrados (NUMLANCDESD preenchido, CODCOB='DESD') — o lançamento
+//      original é substituído pelas parcelas novas e contaria em dobro;
+//   3) fora as contas com CONTA.EXIBIRBALANCETE='N' (é o que explica a ausência
+//      dos grupos 8 - receitas/despesas financeiras e 101 - compensações);
+//   4) valor = VPAGO (o que efetivamente saiu), não VALOR.
+//
+// Unificação entre as bases: os grupos 1..13 e 100..102 têm o MESMO código nas
+// duas, mas 14 e 103..106 estão trocados. Por isso o de-para explícito abaixo.
+// Nos grupos remapeados as contas também não casam por código (em AK 105001 é
+// "aquisição de caixas plásticas" e em JRF 104001 é "manutenção predial"), então
+// esses grupos usam contasPorBase: as contas das duas empresas convivem dentro
+// do mesmo grupo canônico, sem fusão indevida.
+const DRE = {
+  tabela: 'CPAGAR',
+  col: {
+    id: 'NUMLANC', prest: 'PREST', totPrest: 'TOTPREST', filial: 'CODFILIAL',
+    grupo: 'CODGRUPO', conta: 'CODCONTA', funcionario: 'CODFUNC',
+    fornecedorCod: 'CODFORNEC', tipoParceiro: 'TIPOPARCEIRO',
+    numNota: 'NUMNOTA', historico: 'HISTORICO',
+    valor: 'VALOR', valorPago: 'VPAGO',
+    dtpago: 'DTPAGO', vencimento: 'DTVENC', baixa: 'DTBAIXA', emissao: 'DTEMISSAO',
+    desdobrado: 'NUMLANCDESD',
+  },
+  grupoTab: { tabela: 'GRUPO', colCod: 'CODGRUPO', colNome: 'GRUPO' },
+  contaTab: { tabela: 'CONTA', colCod: 'CODCONTA', colGrupo: 'CODGRUPO', colNome: 'CONTA', colExibir: 'EXIBIRBALANCETE' },
+  funcTab: { tabela: 'EMPREGADO', colCod: 'CODFUNC', colNome: 'NOME' },
+
+  // Regras de apuração (ver comentário acima). Deixadas aqui para ficar fácil
+  // afrouxar uma delas se o relatório do sistema mudar de critério.
+  regras: {
+    excluirDesdobrados: true,
+    respeitarExibirBalancete: true,
+    usarVpago: true,
+  },
+
+  // Grupos que NÃO entram no total de despesas. O 100 (fornecedores revenda) é
+  // custo da mercadoria vendida, não despesa operacional — é o único grupo que
+  // o relatório do sistema omite sem que nenhum campo da base o justifique.
+  // Continua visível na página, num bloco próprio de referência.
+  // O 114 (ajuste de estoque/inventário na JRF) também fica fora: é acerto de
+  // estoque, não desembolso operacional, e entra em valores muito altos
+  // (R$ 415 mil em nov/2026) que mascarariam qualquer comparação de despesa.
+  gruposExcluidos: [100, 114],
+
+  // Nome exibido quando a conta existe nas duas bases com descrições diferentes:
+  // vale a da base indicada (a outra fica no título da linha do lançamento).
+  preferirNomeDaBase: 'AK',
+
+  // Sobrescreve o nome canônico de uma conta. Chave: 'grupoCanonico:codconta'.
+  // Use para corrigir os cadastros com typo (ex.: 'RANSFERENCIA LUCIANO').
+  contasNomes: {},
+
+  // Lançamentos sem grupo (JRF tem alguns com CODGRUPO=0) caem aqui.
+  semClassificacao: { id: -1, nome: 'SEM CLASSIFICAÇÃO' },
+
+  // De-para dos grupos. 'de' = código do grupo em cada base.
+  grupos: [
+    { id: 1,   nome: 'INVESTIMENTOS/IMOBILIZADOS',                 de: { AK: 1, JRF: 1 } },
+    { id: 2,   nome: 'DESPESAS DIRETORIA GERAL',                   de: { AK: 2, JRF: 2 } },
+    { id: 3,   nome: 'DESPESA RECURSOS HUMANOS',                   de: { AK: 3, JRF: 3 } },
+    { id: 4,   nome: 'DESPESAS COM VENDAS',                        de: { AK: 4, JRF: 4 } },
+    { id: 5,   nome: 'DESPESAS COM SUPERVISORES/ESC. DE VENDA',    de: { AK: 5, JRF: 5 } },
+    { id: 6,   nome: 'VERBAS/DESPESAS DEPTO COMPRAS',              de: { AK: 6, JRF: 6 } },
+    { id: 7,   nome: 'DESPESAS/RECEITAS ADMINISTRATIVAS',          de: { AK: 7, JRF: 7 } },
+    { id: 8,   nome: 'RECEITAS/DESPESAS FINANCEIRAS',              de: { AK: 8, JRF: 8 } },
+    { id: 9,   nome: 'DESPESAS/RECEITAS TRIBUTÁRIAS',              de: { AK: 9, JRF: 9 } },
+    { id: 10,  nome: 'DESPESAS/RECEITAS C/ TRANSPORTE',            de: { AK: 10, JRF: 10 } },
+    { id: 11,  nome: 'DESPESAS OPERACIONAIS UNIDADE CEASA',        de: { AK: 11, JRF: 11 } },
+    { id: 12,  nome: 'DESPESAS INFORMÁTICA',                       de: { AK: 12, JRF: 12 } },
+    { id: 13,  nome: 'MARKETING',                                  de: { AK: 13, JRF: 13 } },
+    { id: 14,  nome: 'DESPESAS COM PERDAS/AVARIAS',                de: { AK: 14 }, contasPorBase: true },
+    { id: 100, nome: 'FORNECEDORES REVENDA (CMV)',                 de: { AK: 100, JRF: 100 } },
+    { id: 101, nome: 'COMPENSAÇÕES/ACERTOS',                       de: { AK: 101, JRF: 101 } },
+    { id: 102, nome: 'PAGAMENTO DE EMPRÉSTIMOS ADQUIRIDOS',        de: { AK: 102, JRF: 102 } },
+    { id: 103, nome: 'PAGAMENTO DE DESPESAS DE EXERC. ANTERIORES', de: { AK: 103, JRF: 105 }, contasPorBase: true },
+    { id: 104, nome: 'DESPESAS COM OPERAÇÃO MARACUJÁ',             de: { AK: 104, JRF: 106 }, contasPorBase: true },
+    { id: 105, nome: 'DESPESAS OPERACIONAIS UNIDADE TABORDA',      de: { AK: 105, JRF: 104 }, contasPorBase: true },
+    { id: 106, nome: 'PERDAS COM AVARIAS DE PRODUTOS',             de: { AK: 106, JRF: 103 }, contasPorBase: true },
+    { id: 114, nome: 'AJUSTE DE ESTOQUE E INVENTÁRIO',             de: { JRF: 14 }, contasPorBase: true },
+  ],
+
+  // Modelo usado na análise com a Claude API (só comenta números já calculados).
+  modeloIA: process.env.DRE_MODELO || 'claude-opus-5-5',
+};
+
+// Índice 'EMPRESA:codgrupoOrigem' -> grupo canônico. Código de grupo que não
+// estiver aqui é reportado em naoMapeados[] pela página, nunca somado em silêncio.
+DRE.mapaGrupos = (() => {
+  const m = new Map();
+  DRE.grupos.forEach((g) => {
+    Object.keys(g.de || {}).forEach((emp) => m.set(emp + ':' + g.de[emp], g));
+  });
+  return m;
+})();
+DRE.grupoCanonico = (empresaId, codgrupo) =>
+  DRE.mapaGrupos.get(empresaId + ':' + Number(codgrupo)) || null;
 module.exports = {
   PORT: parseInt(process.env.PORT || '3300', 10),
   PYTHON_BIN,
@@ -191,4 +293,5 @@ module.exports = {
   EMPRESAS,
   PARCEIROS_INTERNOS,
   CPAGAR,
+  DRE,
 };

@@ -10,6 +10,9 @@ const adiantamentos = require('./src/adiantamentos');
 const vendas = require('./src/vendas');
 const entregas = require('./src/entregas');
 const bradesco = require('./src/bradesco');
+const dre = require('./src/dre');
+const dreAlertas = require('./src/dre-alertas');
+const dreIA = require('./src/dre-ia');
 
 const app = express();
 app.use(express.json());
@@ -182,6 +185,34 @@ app.get('/api/bradesco', (req, res) => {
     const ini = validarData(req.query.ini, primeiroDiaMes());
     const fim = validarData(req.query.fim, hojeISO());
     res.json(bradesco.consultar(ini, fim, { demo }));
+  } catch (e) {
+    res.status(500).json({ ok: false, erro: String(e.message || e) });
+  }
+});
+
+// ===== Despesas (DRE analítico) =====
+// Árvore grupo > conta > lançamento por DTPAGO, com comparativos e alertas.
+app.get('/api/dre', async (req, res) => {
+  try {
+    const ini = validarData(req.query.ini, primeiroDiaMes());
+    const fim = validarData(req.query.fim, hojeISO());
+    const dados = await dre.listar(ini, fim);
+    const analise = dreAlertas.analisar(dados, { hoje: hojeISO() });
+    res.json(Object.assign({ modo: USE_MOCK ? 'exemplo' : 'oracle', iaDisponivel: dreIA.disponivel() }, dados, { analise }));
+  } catch (e) {
+    res.status(500).json({ erro: String(e.message || e) });
+  }
+});
+
+// Diagnóstico escrito pela Claude API (só comenta os números já calculados).
+app.get('/api/dre/analise', async (req, res) => {
+  try {
+    const ini = validarData(req.query.ini, primeiroDiaMes());
+    const fim = validarData(req.query.fim, hojeISO());
+    const dados = await dre.listar(ini, fim);
+    const analise = dreAlertas.analisar(dados, { hoje: hojeISO() });
+    const ia = await dreIA.analisar(dados, analise, { forcar: String(req.query.forcar || '') === '1' });
+    res.json(ia);
   } catch (e) {
     res.status(500).json({ ok: false, erro: String(e.message || e) });
   }

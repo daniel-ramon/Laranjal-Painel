@@ -91,6 +91,7 @@ function sidebar(active) {
     <nav class="nav">
       <a href="index.html" class="${active === 'overview' ? 'active' : ''}"><span class="ico">▦</span>Visão geral</a>
       <a href="contas.html" class="${active === 'contas' ? 'active' : ''}"><span class="ico">≣</span>Contas a pagar</a>
+      <a href="dre.html" class="${active === 'dre' ? 'active' : ''}"><span class="ico">⊟</span>Despesas (DRE)</a>
     </nav>
     <div class="nav-label">CLIENTES</div>
     <nav class="nav">

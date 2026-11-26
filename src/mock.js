@@ -74,4 +74,62 @@ function gerarPeriodo(iniS, fimS) {
   return gerar(mesHoje).filter((t) => t.dtvenc >= iniS && t.dtvenc <= fimS);
 }
 
-module.exports = { gerar, gerarPeriodo };
+// ===== Despesas (DRE) =====
+// Gera lançamentos pagos no intervalo pedido, com grupos e contas que existem
+// no de-para do config, para a página rodar sem banco (USE_MOCK=true).
+const DRE_CONTAS = [
+  { emp: 'AK',  grupo: 3,   conta: 3007,   nome: 'SALARIOS',                 base: 45000, forn: 'FOLHA DE PAGAMENTOS' },
+  { emp: 'JRF', grupo: 3,   conta: 3007,   nome: 'SALARIOS',                 base: 38000, forn: 'FOLHA DE PAGAMENTOS' },
+  { emp: 'AK',  grupo: 3,   conta: 3012,   nome: 'VALE TRANSPORTE',          base: 2600,  forn: 'VIACAO URBANA' },
+  { emp: 'AK',  grupo: 7,   conta: 7040,   nome: 'ENERGIA ELETRICA',         base: 7400,  forn: 'NEOENERGIA' },
+  { emp: 'JRF', grupo: 7,   conta: 7040,   nome: 'ENERGIA ELETRICA',         base: 5100,  forn: 'NEOENERGIA' },
+  { emp: 'JRF', grupo: 7,   conta: 7089,   nome: 'AGUA',                     base: 980,   forn: 'CAERN' },
+  { emp: 'AK',  grupo: 10,  conta: 10022,  nome: 'COMBUSTIVEL',              base: 9800,  forn: 'POSTO CENTRAL' },
+  { emp: 'JRF', grupo: 10,  conta: 10054,  nome: 'MANUTENCAO DE VEICULOS',   base: 4300,  forn: 'OFICINA DO ZE' },
+  { emp: 'AK',  grupo: 2,   conta: 2008,   nome: 'CARTAO DE CREDITO',        base: 3100,  forn: 'BANCO NUBANK' },
+  { emp: 'JRF', grupo: 11,  conta: 11006,  nome: 'ALUGUEL BOX CEASA',        base: 6200,  forn: 'CEASA RN' },
+  { emp: 'AK',  grupo: 12,  conta: 12016,  nome: 'LICENCA DE SOFTWARE',      base: 1450,  forn: 'BELT SISTEMAS' },
+  { emp: 'AK',  grupo: 1,   conta: 1006,   nome: 'AQUISICAO DE EQUIPAMENTO', base: 12500, forn: 'BANCO VOTORANTIM' },
+  { emp: 'JRF', grupo: 104, conta: 104001, nome: 'MANUTENCAO PREDIAL TABORDA', base: 3300, forn: 'CONSTRUTORA LIMA' },
+  { emp: 'AK',  grupo: 105, conta: 105002, nome: 'MANUTENCAO DE PREDIO',     base: 2800,  forn: 'CONSTRUTORA LIMA' },
+  { emp: 'AK',  grupo: 100, conta: 100000, nome: 'COMPRA DE MERCADORIA P/ REVENDA', base: 320000, forn: 'PRODUTOR RURAL' },
+  { emp: 'JRF', grupo: 100, conta: 100000, nome: 'COMPRA DE MERCADORIA P/ REVENDA', base: 410000, forn: 'PRODUTOR RURAL' },
+];
+
+function gerarDRE(iniS, fimS) {
+  const nomesGrupo = {
+    1: 'INVESTIMENTOS/IMOBILIZADOS', 2: 'DESPESAS DIRETORIA GERAL',
+    3: 'DESPESA RECURSOS HUMANOS', 7: 'DESPESAS/RECEITAS ADMINISTRATIVAS',
+    10: 'DESPESAS/RECEITAS C/TRANSPORTE', 11: 'DESPESAS OPERACIONAIS UNID CEASA',
+    12: 'DESPESAS INFORMATICA', 100: 'FORNECEDORES REVENDA',
+    104: 'DESPESAS OPERACIONAS UNIDADE TABORDA', 105: 'DESPESAS OPERACIONAIS UNID TABORDA',
+  };
+  const out = [];
+  let seq = 50000;
+  const fim = new Date(fimS + 'T00:00:00');
+  for (let d = new Date(iniS + 'T00:00:00'); d <= fim; d.setDate(d.getDate() + 1)) {
+    const dia = d.getDate();
+    const iso = d.toISOString().slice(0, 10);
+    const semente = d.getMonth() * 31 + dia;
+    DRE_CONTAS.forEach((c, i) => {
+      // cada conta paga em dias diferentes do mês, com variação suave
+      if ((dia + i * 3) % (c.grupo === 100 ? 2 : 7) !== 0) return;
+      const fator = 0.75 + (((semente + i * 17) % 50) / 100);
+      const valor = Math.round(c.base * fator / 10) * 10 / (c.grupo === 100 ? 8 : 1);
+      out.push({
+        origem: c.emp, numlanc: ++seq, prest: '1', totPrest: 1,
+        filial: c.emp === 'AK' ? '02' : '01',
+        codgrupo: c.grupo, nomeGrupoOrigem: nomesGrupo[c.grupo] || ('GRUPO ' + c.grupo),
+        codconta: c.conta, nomeContaOrigem: c.nome,
+        codfornec: 100 + i, fornecedor: c.forn,
+        funcionario: i % 3 === 0 ? 'NONATO' : null,
+        numnota: 70000 + seq, historico: c.nome + ' ' + iso,
+        valor, pago: valor,
+        dtpago: iso, dtvenc: iso, emissao: iso,
+      });
+    });
+  }
+  return out;
+}
+
+module.exports = { gerar, gerarPeriodo, gerarDRE };

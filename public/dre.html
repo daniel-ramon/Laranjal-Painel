@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Despesas (DRE)</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="side"></div>
+  <div class="main">
+    <div class="topbar">
+      <h1>Despesas (DRE)</h1>
+      <div class="sub">Despesas pagas por data de pagamento — clique no grupo para abrir as contas e na conta para ver os lançamentos</div>
+    </div>
+    <div class="controls">
+      <label class="dtlbl">De <input id="dtIni" class="sel" type="date" title="Pago a partir de" /></label>
+      <label class="dtlbl">Até <input id="dtFim" class="sel" type="date" title="Pago até" /></label>
+      <button id="aplicar" class="sel btn-aplicar" type="button">Aplicar</button>
+      <select id="empresaSel" class="sel">
+        <option value="TODAS">Todas as empresas</option>
+        <option value="AK">AK Hortifruti</option>
+        <option value="JRF">JRF (Laranjal)</option>
+      </select>
+      <input id="busca" class="busca" type="search" placeholder="Buscar grupo, conta, fornecedor, histórico…" />
+      <button id="csv" class="sel btn-aplicar" type="button" title="Baixar o que está na tela">CSV</button>
+      <span class="badge-modo" id="modo"></span>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="content">
+      <div class="kpis" id="kpis"></div>
+
+      <div class="panel" id="painelIA">
+        <div class="phead">
+          <div class="ttl">Diagnóstico do analista <span class="muted" id="iaModelo"></span></div>
+          <div>
+            <button id="iaBtn" class="ia-btn" type="button">Analisar com IA</button>
+          </div>
+        </div>
+        <div class="ia-body" id="iaBody"></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead">
+          <div class="ttl">Pontos de atenção <span class="muted" id="alertaCont"></span></div>
+          <div class="muted" id="alertaNota"></div>
+        </div>
+        <div id="alertas"></div>
+      </div>
+
+      <div class="dre-charts">
+        <div class="panel">
+          <div class="phead"><div class="ttl">Participação por grupo</div><div class="muted">AK + JRF</div></div>
+          <div id="chartGrupos" class="chart-wrap"></div>
+        </div>
+        <div class="panel">
+          <div class="phead"><div class="ttl">Últimos 6 meses</div><div class="muted" id="serieNota"></div></div>
+          <div id="chartSerie" class="chart-wrap"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="phead">
+          <div class="ttl">Grupos e contas <span class="muted" id="cont"></span></div>
+          <div>
+            <span class="limpar" id="expandir">expandir tudo</span>
+            <span class="limpar" id="recolher">recolher</span>
+          </div>
+        </div>
+        <table class="dre-tree">
+          <thead><tr>
+            <th>GRUPO / CONTA</th>
+            <th class="num">AK</th>
+            <th class="num">JRF</th>
+            <th class="num">TOTAL</th>
+            <th class="num">%</th>
+            <th class="num">LANÇ.</th>
+            <th class="num">PERÍODO ANT.</th>
+            <th class="num">MÉDIA 3</th>
+          </tr></thead>
+          <tbody id="arvore"></tbody>
+        </table>
+      </div>
+
+      <div class="panel" id="painelABC">
+        <div class="phead"><div class="ttl">Curva ABC das contas <span class="muted" id="abcNota"></span></div></div>
+        <table>
+          <thead><tr><th>CONTA</th><th>GRUPO</th><th class="num">TOTAL</th><th class="num">% ACUM.</th><th>CLASSE</th></tr></thead>
+          <tbody id="abc"></tbody>
+        </table>
+      </div>
+
+      <div class="panel" id="painelFora">
+        <div class="phead">
+          <div class="ttl">Fora do total de despesas</div>
+          <div class="muted">custo de mercadoria e acerto de estoque — mostrado só como referência</div>
+        </div>
+        <table>
+          <thead><tr><th>GRUPO</th><th class="num">AK</th><th class="num">JRF</th><th class="num">TOTAL</th><th class="num">LANÇ.</th></tr></thead>
+          <tbody id="fora"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/common.js"></script>
+  <script src="js/dre.js"></script>
+</body>
+</html>
