@@ -104,8 +104,11 @@ function normalizar(origem, row) {
     numnota: row.NUMNOTA,
     historico: String(row.HISTORICO || '').trim(),
     valor,
-    // o relatório considera o que efetivamente saiu (VPAGO); VALOR é só fallback
+    vpago,
+    // o relatório do sistema soma VALOR; VPAGO fica à vista no detalhe quando
+    // difere (juros pagos a mais, desconto obtido a menos)
     pago: DRE.regras.usarVpago && vpago != null ? vpago : valor,
+    difPagamento: vpago != null && Math.abs(vpago - valor) >= 0.005 ? vpago - valor : 0,
     dtpago: d(row.DTPAGO),
     dtvenc: d(row.DTVENC),
     emissao: d(row.DTEMISSAO),
@@ -157,7 +160,9 @@ function agregar(lancs, detalhe) {
     }
     if (!grupos.has(g.id)) {
       grupos.set(g.id, Object.assign({
-        id: g.id, nome: g.nome, excluido: DRE.gruposExcluidos.indexOf(g.id) >= 0,
+        id: g.id, nome: g.nome,
+        excluido: DRE.gruposExcluidos.indexOf(g.id) >= 0,
+        investimento: (DRE.gruposInvestimento || []).indexOf(g.id) >= 0,
         nomesOrigem: {}, _contas: new Map(),
       }, zeros()));
     }

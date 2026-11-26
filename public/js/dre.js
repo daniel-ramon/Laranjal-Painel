@@ -77,7 +77,7 @@ function montarArvore() {
     if (!contas.length) return;
     contas.sort((a, b) => b.t - a.t);
     grupos.push({
-      id: g.id, nome: g.nome, nomesOrigem: g.nomesOrigem,
+      id: g.id, nome: g.nome, nomesOrigem: g.nomesOrigem, investimento: g.investimento,
       t, ak, jrf, n, contas,
       anterior: campoEmpresa(g, 'anterior'), media3: campoEmpresa(g, 'media3'),
     });
@@ -90,6 +90,8 @@ function montarArvore() {
 function kpis(arv) {
   const total = arv.reduce((s, g) => s + g.t, 0);
   const qtd = arv.reduce((s, g) => s + g.n, 0);
+  // o DRE do sistema separa investimento de despesa; a página mostra os dois
+  const inv = arv.filter((g) => g.investimento).reduce((s, g) => s + g.t, 0);
   const ant = campoEmpresa(DADOS, 'totalAnterior') || 0;
   const med = campoEmpresa(DADOS, 'totalMedia3') || 0;
   const vAnt = ant ? (total - ant) / Math.abs(ant) : null;
@@ -111,6 +113,7 @@ function kpis(arv) {
        <div class="t"><span class="dot" style="background:var(--blue)"></span>Pago no período</div>
        <div class="v">${fmtBRL(total)}</div>
        <div class="q">${fmtNum(qtd)} lançamento(s) · ${fmtData(DADOS.ini)} a ${fmtData(DADOS.fim)}</div>
+       ${inv ? `<div class="mini"><span>Despesas <b>${fmtBRL(total - inv)}</b></span><span>Investimentos <b>${fmtBRL(inv)}</b></span></div>` : ''}
        ${mini}
      </div>`,
     `<div class="kpi kpi-flat">
@@ -249,7 +252,9 @@ function linhaLancamentos(c) {
         <td class="muted" title="lançamento ${l.numlanc}/${esc(l.prest)}">${esc(l.numnota) || '—'}</td>
         <td class="muted">${esc(l.funcionario) || '—'}</td>
         <td class="muted">${fmtData(l.dtvenc)}</td>
-        <td class="num">${fmtBRL(l.pago)}</td>
+        <td class="num">${fmtBRL(l.pago)}${l.difPagamento
+          ? `<span class="dif-pg" title="valor do título ${fmtBRL(l.valor)} · pago ${fmtBRL(l.vpago)}">${
+              l.difPagamento > 0 ? '+' : ''}${fmtBRL(l.difPagamento)}</span>` : ''}</td>
       </tr>`).join('')}
       <tr class="tot"><td colspan="7">${c.n} lançamento(s)</td><td class="num">${fmtBRL(c.t)}</td></tr>
       </tbody>
@@ -273,7 +278,8 @@ function renderArvore(arv, total) {
       && g.nomesOrigem.AK !== g.nomesOrigem.JRF
       ? `<span class="tag-dif" title="AK: ${esc(g.nomesOrigem.AK)} · JRF: ${esc(g.nomesOrigem.JRF)}">nomes diferentes</span>` : '';
     out.push(`<tr class="g-row ${abertoG ? 'aberto' : ''}" data-gid="${g.id}">
-      <td><span class="caret">${abertoG ? '▾' : '▸'}</span><b>${esc(g.nome)}</b>${dif}</td>
+      <td><span class="caret">${abertoG ? '▾' : '▸'}</span><b>${esc(g.nome)}</b>${dif}${
+        g.investimento ? '<span class="tag-inv" title="o DRE do sistema lança este grupo em Investimentos, fora do Total Despesas">investimento</span>' : ''}</td>
       <td class="num ak">${g.ak ? fmtBRL(g.ak) : '<span class="muted">—</span>'}</td>
       <td class="num jrf">${g.jrf ? fmtBRL(g.jrf) : '<span class="muted">—</span>'}</td>
       <td class="num"><b>${fmtBRL(g.t)}</b></td>
@@ -404,11 +410,12 @@ async function pedirIA(forcar) {
 // ---------- CSV ----------
 function baixarCSV(arv) {
   const linhas = [['GRUPO', 'CONTA', 'CODCONTA', 'EMPRESA', 'PAGO EM', 'VENCIMENTO', 'FORNECEDOR',
-    'HISTORICO', 'DOCUMENTO', 'LANCAMENTO', 'FUNCIONARIO', 'VALOR']];
+    'HISTORICO', 'DOCUMENTO', 'LANCAMENTO', 'FUNCIONARIO', 'VALOR', 'VALOR PAGO']];
   arv.forEach((g) => g.contas.forEach((c) => c.lanc.forEach((l) => {
     linhas.push([g.nome, c.nome, c.codconta, l.origem, l.dtpago, l.dtvenc, l.fornecedor,
       l.historico, l.numnota, l.numlanc + '/' + l.prest, l.funcionario || '',
-      String(l.pago.toFixed(2)).replace('.', ',')]);
+      String(l.pago.toFixed(2)).replace('.', ','),
+      l.vpago == null ? '' : String(l.vpago.toFixed(2)).replace('.', ',')]);
   })));
   const csv = linhas.map((r) => r.map((v) => {
     const s = String(v == null ? '' : v);

@@ -213,8 +213,20 @@ const DRE = {
   regras: {
     excluirDesdobrados: true,
     respeitarExibirBalancete: true,
-    usarVpago: true,
+    // O Bspac9740 soma VALOR (valor de face do título), não VPAGO (o que saiu
+    // do caixa). Confirmado contra o sintético de 26/11/2026 09:53, AK filial
+    // 02, 01/11 a 26/11: os grupos 3, 7 e 10 só fecham com VALOR — p.ex. o
+    // lançamento 27233/1 (folha de outubro) tem VALOR 49.703,50 e VPAGO
+    // 49.557,60, e o relatório conta os 49.703,50.
+    // Mude para true se quiser acompanhar o desembolso real em vez do
+    // relatório; a diferença é pequena (33 lançamentos em 2.102 de ago a nov).
+    usarVpago: false,
   },
+
+  // O DRE do sistema separa INVESTIMENTO de DESPESA: o grupo 1 sai na linha
+  // "Investimentos", fora do "Total Despesas" (no sintético de 26/11:
+  // 142.936,35 no total, menos 20.776,32 de investimento = 122.160,03).
+  gruposInvestimento: [1],
 
   // Grupos que NÃO entram no total de despesas. O 100 (fornecedores revenda) é
   // custo da mercadoria vendida, não despesa operacional — é o único grupo que

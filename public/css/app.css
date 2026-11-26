@@ -632,3 +632,13 @@ table.dre-tree td { vertical-align: middle; }
   .dre-charts { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: 130px 1fr 62px; }
 }
+.tag-inv {
+  font-size: 10px; margin-left: 8px; padding: 2px 7px; border-radius: 20px; font-weight: 500;
+  color: #c4b5fd; border: 1px solid rgba(139,92,246,.4); background: rgba(139,92,246,.12);
+}
+.dif-pg { display: block; font-size: 10.5px; color: var(--text-faint); font-weight: 500; }
+/* a árvore tem 8 colunas e a sublista de lançamentos mais 8: em tela estreita
+   rola na horizontal em vez de empurrar a página inteira */
+.tbl-scroll { overflow-x: auto; }
+.tbl-scroll table.dre-tree { min-width: 980px; }
+.tbl-scroll table.itens { min-width: 900px; }
